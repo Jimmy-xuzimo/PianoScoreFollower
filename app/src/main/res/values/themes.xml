@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PianoScoreFollower" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ink_900</item>
+        <item name="android:statusBarColor">@color/ink_900</item>
+        <item name="android:navigationBarColor">@color/ink_900</item>
+        <item name="android:colorAccent">@color/accent</item>
+    </style>
+</resources>

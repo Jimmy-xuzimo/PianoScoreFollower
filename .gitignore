@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local machine configuration
+local.properties
+
+# Signing material — never commit these.
+release.keystore
+keystore.properties
+
+# Debug scratch: emulator screenshots, UI hierarchy dumps, scratch scores.
+# `docs/images/` holds the curated screenshots that the README links to.
+/shots/
+/shots_v040/
+/tmp_sf/
+/transcribe/crops/
+/*.png
+/*.jpg
+/*.xml
+/*.pdf
+/*.txt
+
+# OS noise
+.DS_Store
+Thumbs.db
