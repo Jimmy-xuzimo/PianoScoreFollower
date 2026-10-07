@@ -1,6 +1,6 @@
-# 智能曲谱 · PianoScoreFollower
+# 智能琴谱 · PianoScoreFollower
 
-一个 Android 端的**钢琴智能曲谱**应用：导入乐谱、边弹边自动跟谱、自动翻页，并在需要时滚动谱面。
+一个 Android 端的**智能琴谱**应用：导入乐谱、边弹边自动跟谱、自动翻页，并在需要时滚动谱面。
 
 应用由三部分组成——用 Jetpack Compose 写界面，用 [alphaTab](https://www.alphatab.net/) 在 WebView 里排版与发声，用自研的 DSP 管线做音高识别与跟谱对齐。
 
@@ -56,14 +56,14 @@
 | 文件导入 | `PickMultipleVisualMedia`（相册多选）、`OpenMultipleDocuments`（PDF + 图片） |
 | PDF 处理 | `PdfRenderer` 逐页光栅化为 JPEG |
 | 格式转换 | 自研 MIDI → MusicXML 转换，交由 alphaTab 排版 |
-| 构建 | AGP 8.5.2，Kotlin 1.9.24，JDK 17，`compileSdk`/`targetSdk` 34，`minSdk` 29 |
+| 构建 | AGP 8.5.2，Kotlin 1.9.24，JDK 17，`compileSdk`/`targetSdk` 36，`minSdk` 29 |
 
 ---
 
 ## 项目结构
 
 ```
-app/src/main/java/com/pianofollower/
+app/src/main/java/com/pianoscorefollower/app/
 ├── audio/        麦克风采集、FFT、音高/色度/起音检测、校音
 ├── follower/     跟谱引擎、时间轴映射、自动翻页
 ├── image/        PDF/照片滚动谱：光栅化、页序、持久化
@@ -83,18 +83,23 @@ app/src/main/assets/
 
 ## 构建与运行
 
-**环境要求**：JDK 17、Android SDK（API 34）。首次构建会自动下载 Gradle 与依赖。
+**环境要求**：JDK 17、Android SDK（API 36）。首次构建会自动下载 Gradle 与依赖。
 
 ```bash
 # Debug 包
 ./gradlew :app:assembleDebug
 
-# Release 包（需要签名配置，见下）
+# Release APK（需要签名配置，见下）
 ./gradlew :app:assembleRelease
+
+# Google Play 上架用的 AAB
+./gradlew :app:bundleRelease
 
 # 单元测试
 ./gradlew :app:testDebugUnitTest
 ```
+
+> 上架 Google Play 必须使用 `bundleRelease` 产出的 AAB（`app/build/outputs/bundle/release/app-release.aab`），且 `targetSdk` 需满足 Play 的 API 级别要求（2026-08-31 起为 API 36）。
 
 ### 签名配置
 

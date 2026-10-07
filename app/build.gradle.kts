@@ -12,15 +12,15 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.pianofollower"
-    compileSdk = 34
+    namespace = "com.pianoscorefollower.app"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.pianofollower"
+        applicationId = "com.pianoscorefollower.app"
         minSdk = 29
-        targetSdk = 34
-        versionCode = 11
-        versionName = "0.6.1"
+        targetSdk = 36
+        versionCode = 12
+        versionName = "0.7.0"
         resourceConfigurations += listOf("zh", "en")
     }
 
