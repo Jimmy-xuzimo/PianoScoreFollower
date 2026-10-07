@@ -43,6 +43,19 @@
 
 ---
 
+## 网页端
+
+同一套算法的网页版本已上线，**独立仓库、独立部署**，与 Android 端互不影响：
+
+- **在线使用**：<https://jimmy-xuzimo.github.io/PianoScoreFollower-Web/>
+- **源码**：[PianoScoreFollower-Web](https://github.com/Jimmy-xuzimo/PianoScoreFollower-Web)
+
+功能与 Android 端逐项对齐（导入 MIDI / MusicXML / PDF / 照片、播放、滚动谱、实时跟谱、
+自动翻页、校音、主题切换），按 UA 识别手机 / 平板 / 电脑并自适应横竖屏。DSP、跟谱、
+校音算法由 Kotlin 逐行移植，配色复刻同一套色调生成算法，因此跨端行为与观感一致。
+
+---
+
 ## 技术栈
 
 | 层面 | 选型 |
