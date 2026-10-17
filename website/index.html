@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>智能琴谱 · PianoScoreFollower — 让乐谱，跟上你的演奏。</title>
+    <meta
+      name="description"
+      content="PianoScoreFollower 智能琴谱：为 Android 打造的开源乐谱伴侣。实时跟谱、自动翻页、PDF 与照片滚动谱、音准校准，也可体验独立网页版。"
+    />
+    <link
+      rel="canonical"
+      href="https://jimmy-xuzimo.github.io/PianoScoreFollower/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:title" content="智能琴谱 · PianoScoreFollower" />
+    <meta
+      property="og:description"
+      content="让乐谱，跟上你的演奏。An open-source companion for your piano practice."
+    />
+    <meta
+      property="og:url"
+      content="https://jimmy-xuzimo.github.io/PianoScoreFollower/"
+    />
+    <meta
+      property="og:image"
+      content="https://jimmy-xuzimo.github.io/PianoScoreFollower/assets/social.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="PianoScoreFollower — Stay in the music. Let the score follow."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#f7f6f2" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <script src="preferences.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main" data-i18n="skip">跳转到内容</a>
+    <header class="header">
+      <div class="container nav-wrap">
+        <a class="brand" href="#" aria-label="PianoScoreFollower"
+          ><svg viewBox="0 0 36 36" aria-hidden="true">
+            <rect x="1" y="1" width="34" height="34" rx="11" />
+            <path d="M14 24V12l13-3v12M14 16l13-3" />
+            <ellipse cx="10.5" cy="25" rx="3.5" ry="2.5" />
+            <ellipse cx="23.5" cy="22" rx="3.5" ry="2.5" /></svg
+          ><span>Piano<span class="brand-light">ScoreFollower</span></span></a
+        >
+        <nav class="desktop-nav" aria-label="主导航" data-label="navigation">
+          <a href="#features" data-i18n="navFeatures">功能</a
+          ><a href="#experience" data-i18n="navExperience">界面体验</a
+          ><a href="#start" data-i18n="navStart">开始使用</a>
+        </nav>
+        <div class="nav-actions">
+          <button id="language" class="language" aria-label="Switch to English">
+            EN</button
+          ><button id="theme" class="theme-button" aria-label="主题：跟随系统">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" />
+              <path d="M12 4a8 8 0 0 1 0 16Z" class="theme-fill" />
+            </svg></button
+          ><a
+            class="github-nav"
+            href="https://github.com/Jimmy-xuzimo/PianoScoreFollower"
+            >GitHub <span aria-hidden="true">↗</span></a
+          ><button
+            id="menu"
+            class="menu-button"
+            aria-label="打开导航"
+            data-label="openMenu"
+            aria-expanded="false"
+            aria-controls="mobile-nav"
+          >
+            <span></span><span></span>
+          </button>
+        </div>
+      </div>
+      <nav
+        id="mobile-nav"
+        class="mobile-nav container"
+        aria-label="移动导航"
+        data-label="mobileNavigation"
+        hidden
+      >
+        <a href="#features" data-i18n="navFeatures">功能</a
+        ><a href="#experience" data-i18n="navExperience">界面体验</a
+        ><a href="#start" data-i18n="navStart">开始使用</a
+        ><a href="https://github.com/Jimmy-xuzimo/PianoScoreFollower"
+          >GitHub ↗</a
+        >
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero container" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="tiny-note" aria-hidden="true">♪</span
+            ><span data-i18n="heroTag">给每一次专注的练习</span>
+          </div>
+          <h1 id="hero-title">
+            <span data-i18n="hero1">让乐谱，</span><br /><em data-i18n="hero2"
+              >跟上你的演奏。</em
+            >
+          </h1>
+          <p class="hero-desc" data-i18n="heroDesc">
+            双手留给琴键，目光留给旋律。导入你的乐谱，让实时跟谱与自动翻页，陪你完成下一次练习。
+          </p>
+          <div class="hero-actions">
+            <a
+              class="button primary"
+              href="https://github.com/Jimmy-xuzimo/PianoScoreFollower/releases/latest"
+              ><span data-i18n="download">下载 Android 版</span
+              ><span aria-hidden="true">↓</span></a
+            ><a
+              class="button secondary"
+              href="https://jimmy-xuzimo.github.io/PianoScoreFollower-Web/"
+              ><span data-i18n="tryWeb">体验网页版</span
+              ><span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <p class="hero-note" data-i18n="heroNote">
+            开源 · Android 10+ · 独立网页版
+          </p>
+        </div>
+        <div class="hero-visual">
+          <div class="visual-halo" aria-hidden="true"></div>
+          <span class="floating-note note-one" aria-hidden="true">♪</span
+          ><span class="floating-note note-two" aria-hidden="true">♩</span>
+          <div class="score-card">
+            <div class="score-top">
+              <span
+                ><i class="dot"></i
+                ><span data-i18n="demoTitle">跟谱交互示意</span></span
+              ><span class="score-format">MIDI / MusicXML</span>
+            </div>
+            <div class="score-paper">
+              <img
+                src="assets/score.webp"
+                width="800"
+                height="420"
+                alt="应用内 Minuet in C 乐谱截图"
+                data-alt="scoreAlt"
+                fetchpriority="high"
+              />
+              <div
+                id="score-cursor"
+                class="score-cursor"
+                aria-hidden="true"
+              ></div>
+            </div>
+            <div class="demo-controls">
+              <div>
+                <span class="demo-note-label" data-i18n="sampleNote"
+                  >示意音符</span
+                ><strong id="demo-note">C4</strong>
+              </div>
+              <div class="demo-buttons">
+                <button
+                  id="demo-reset"
+                  class="reset"
+                  aria-label="重置示意"
+                  data-label="reset"
+                >
+                  ↺</button
+                ><button id="demo-play" class="demo-play" aria-pressed="false">
+                  <span class="play-icon" aria-hidden="true">▶</span
+                  ><span data-i18n="playDemo">播放示意</span>
+                </button>
+              </div>
+            </div>
+            <div class="piano" aria-hidden="true">
+              <div class="white-keys">
+                <i data-note="C4"></i><i data-note="D4"></i
+                ><i data-note="E4"></i><i data-note="F4"></i
+                ><i data-note="G4"></i><i data-note="A4"></i
+                ><i data-note="B4"></i><i data-note="C5"></i
+                ><i data-note="D5"></i><i data-note="E5"></i
+                ><i data-note="F5"></i><i data-note="G5"></i
+                ><i data-note="A5"></i><i data-note="B5"></i>
+              </div>
+              <div class="black-keys">
+                <i style="--position: 1" data-note="C#4"></i
+                ><i style="--position: 2" data-note="D#4"></i
+                ><i style="--position: 4" data-note="F#4"></i
+                ><i style="--position: 5" data-note="G#4"></i
+                ><i style="--position: 6" data-note="A#4"></i
+                ><i style="--position: 8" data-note="C#5"></i
+                ><i style="--position: 9" data-note="D#5"></i
+                ><i style="--position: 11" data-note="F#5"></i
+                ><i style="--position: 12" data-note="G#5"></i
+                ><i style="--position: 13" data-note="A#5"></i>
+              </div>
+            </div>
+          </div>
+          <div class="visual-caption">
+            <span class="caption-line"></span
+            ><span data-i18n="demoNote"
+              >基于真实乐谱截图的视觉示意，无音频、无需麦克风。</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <div class="formats container">
+        <span data-i18n="formatsLabel">从你的乐谱开始</span>
+        <div>
+          <span>MIDI</span><span>MusicXML</span><span>PDF</span
+          ><span data-i18n="photos">照片</span>
+        </div>
+        <span class="formats-end" data-i18n="formatsEnd"
+          >不同格式，各有合适的练习方式。</span
+        >
+      </div>
+
+      <section id="features" class="section container">
+        <div class="section-heading centered">
+          <p class="eyebrow" data-i18n="featuresTag">少些分心，多些音乐</p>
+          <h2 data-i18n="featuresTitle">让练习，回到演奏本身。</h2>
+          <p data-i18n="featuresDesc">
+            从第一份乐谱到下一段旋律，给日常练习一个顺手的起点。
+          </p>
+        </div>
+        <div class="features-grid">
+          <article class="feature feature-follow">
+            <span class="feature-icon" aria-hidden="true">⌁</span
+            ><span class="feature-number">01</span>
+            <h3 data-i18n="followTitle">你弹到哪，谱跟到哪。</h3>
+            <p data-i18n="followDesc">
+              通过麦克风识别音高，与结构化乐谱匹配，驱动光标前进。逐行跟随与自动翻页，让目光更从容。
+            </p>
+            <div class="signal" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+              ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+              ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <span class="feature-foot" data-i18n="followFoot"
+              >实时识别 · 逐行跟随 · 自动翻页</span
+            >
+          </article>
+          <article class="feature feature-scroll">
+            <span class="feature-icon" aria-hidden="true">▤</span
+            ><span class="feature-number">02</span>
+            <h3 data-i18n="scrollTitle">纸上的谱，也能流动。</h3>
+            <p data-i18n="scrollDesc">
+              导入 PDF
+              或照片，按顺序排好页面、设定总时长，即可匀速滚动。随时暂停，也能手动调整速度。
+            </p>
+            <div class="paper-stack" aria-hidden="true">
+              <div><span></span><span></span><span></span><span></span></div>
+              <div><span></span><span></span><span></span><span></span></div>
+              <div><span></span><span></span><span></span><span></span></div>
+            </div>
+            <span class="feature-foot" data-i18n="scrollFoot"
+              >PDF / 照片使用定时滚动，无需音高匹配</span
+            >
+          </article>
+          <article class="feature feature-tune">
+            <span class="feature-icon" aria-hidden="true">♮</span
+            ><span class="feature-number">03</span>
+            <h3 data-i18n="tuneTitle">从一个准音开始。</h3>
+            <p data-i18n="tuneDesc">
+              弹奏中央 C
+              完成基准校准，再查看当前音符与音分偏差。多次采样取中位数，降低单次误判的影响。
+            </p>
+            <div class="tuner-art" aria-hidden="true">
+              <div class="tuner-scale">
+                <span>−50</span><span>0</span><span>+50</span>
+              </div>
+              <div class="tuner-needle"></div>
+              <strong>C<span>4</span></strong>
+            </div>
+            <span class="feature-foot" data-i18n="tuneFoot"
+              >中央 C 校准 · 音符识别 · 音分显示</span
+            >
+          </article>
+        </div>
+      </section>
+
+      <section id="experience" class="experience-section section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow" data-i18n="experienceTag">走近真实界面</p>
+              <h2 data-i18n="experienceTitle">每一页，都为练习而设计。</h2>
+            </div>
+            <p data-i18n="experienceDesc">
+              以下为仓库中的 Android 应用截图。\n切换场景，了解不同的练习方式。
+            </p>
+          </div>
+          <div class="experience-grid">
+            <div class="experience-copy">
+              <div
+                id="screenshots-tabs"
+                class="screen-tabs"
+                role="tablist"
+                aria-orientation="vertical"
+                aria-label="应用界面"
+                data-label="screenTabs"
+              >
+                <button
+                  id="tab-notation"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="screen-panel"
+                  tabindex="0"
+                  data-screen="notation"
+                >
+                  <span class="tab-number">01</span
+                  ><span
+                    ><strong data-i18n="screenNotation">乐谱阅读</strong
+                    ><small data-i18n="screenNotationSub"
+                      >导入、排版，开始下一首。</small
+                    ></span
+                  ><span class="tab-arrow" aria-hidden="true">↗</span></button
+                ><button
+                  id="tab-playing"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="screen-panel"
+                  tabindex="-1"
+                  data-screen="playing"
+                >
+                  <span class="tab-number">02</span
+                  ><span
+                    ><strong data-i18n="screenPlaying">播放与跟谱</strong
+                    ><small data-i18n="screenPlayingSub"
+                      >光标前进，练习不断。</small
+                    ></span
+                  ><span class="tab-arrow" aria-hidden="true">↗</span></button
+                ><button
+                  id="tab-tuner"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="screen-panel"
+                  tabindex="-1"
+                  data-screen="tuner"
+                >
+                  <span class="tab-number">03</span
+                  ><span
+                    ><strong data-i18n="screenTuner">音准校准</strong
+                    ><small data-i18n="screenTunerSub"
+                      >留意音高，也听见细节。</small
+                    ></span
+                  ><span class="tab-arrow" aria-hidden="true">↗</span></button
+                ><button
+                  id="tab-settings"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="screen-panel"
+                  tabindex="-1"
+                  data-screen="settings"
+                >
+                  <span class="tab-number">04</span
+                  ><span
+                    ><strong data-i18n="screenSettings">个性外观</strong
+                    ><small data-i18n="screenSettingsSub"
+                      >深浅主题，五种预设色调。</small
+                    ></span
+                  ><span class="tab-arrow" aria-hidden="true">↗</span>
+                </button>
+              </div>
+              <p class="screen-context" id="screen-description">
+                MIDI 与 MusicXML 交由 alphaTab
+                排版，支持播放与点按定位。导入的乐谱保存于本地，重启后仍可继续。
+              </p>
+              <a
+                class="text-link"
+                href="https://jimmy-xuzimo.github.io/PianoScoreFollower-Web/"
+                ><span data-i18n="openWeb">打开独立网页版</span
+                ><span aria-hidden="true">↗</span></a
+              >
+            </div>
+            <div
+              id="screen-panel"
+              class="screen-stage"
+              role="tabpanel"
+              aria-labelledby="tab-notation"
+              tabindex="0"
+            >
+              <span class="stage-label">THE ANDROID EXPERIENCE</span>
+              <div class="device-frame">
+                <img
+                  id="app-screenshot"
+                  src="assets/notation.webp"
+                  width="800"
+                  height="1280"
+                  loading="lazy"
+                  alt="Android 应用的乐谱阅读界面"
+                />
+              </div>
+              <span class="screenshot-caption" data-i18n="screenshotNote"
+                >真实应用截图 · 界面语言以应用为准</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section container steps-section">
+        <div class="section-heading centered">
+          <p class="eyebrow" data-i18n="stepsTag">简单开始，慢慢进步</p>
+          <h2 data-i18n="stepsTitle">三步，进入你的练习时间。</h2>
+        </div>
+        <div class="steps-grid">
+          <article>
+            <span class="step-number">01</span>
+            <h3 data-i18n="step1Title">带上你的乐谱</h3>
+            <p data-i18n="step1Desc">
+              导入 MIDI / MusicXML，或用 PDF
+              与照片建立滚动谱。也可以从应用内置示例开始。
+            </p>
+          </article>
+          <article>
+            <span class="step-number">02</span>
+            <h3 data-i18n="step2Title">选一种练习方式</h3>
+            <p data-i18n="step2Desc">
+              结构化乐谱可开启麦克风跟谱；PDF
+              与照片设定滚动时长。需要时，先用中央 C 校准。
+            </p>
+          </article>
+          <article>
+            <span class="step-number">03</span>
+            <h3 data-i18n="step3Title">把注意力交给音乐</h3>
+            <p data-i18n="step3Desc">
+              跟随光标、播放乐谱，或让页面按节奏滚动。随时暂停、调整，再继续练习。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="craft-section">
+        <div class="container craft-grid">
+          <div>
+            <p class="eyebrow" data-i18n="craftTag">开放的代码，认真的细节</p>
+            <h2 data-i18n="craftTitle">音乐之外，\n也值得仔细打磨。</h2>
+            <p data-i18n="craftDesc">
+              原生 Android 界面、alphaTab 乐谱引擎与自研 DSP
+              管线共同工作。从音频采集到跟谱对齐，源码都在这里。
+            </p>
+            <a
+              class="text-link"
+              href="https://github.com/Jimmy-xuzimo/PianoScoreFollower"
+              ><span data-i18n="exploreSource">探索 GitHub 源码</span> ↗</a
+            >
+          </div>
+          <div class="craft-list">
+            <div>
+              <span>01 / INTERFACE</span
+              ><strong>Kotlin · Jetpack Compose</strong>
+              <p data-i18n="craftUi">
+                Material 3 界面，横竖屏适配与本地偏好保存。
+              </p>
+            </div>
+            <div>
+              <span>02 / NOTATION</span><strong>alphaTab</strong>
+              <p data-i18n="craftScore">
+                在 WebView 中完成乐谱排版与声音合成。
+              </p>
+            </div>
+            <div>
+              <span>03 / LISTENING</span
+              ><strong>FFT · Chroma · ScoreFollower</strong>
+              <p data-i18n="craftDsp">音高检测、色度特征与跟谱对齐管线。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="start" class="section container">
+        <div class="section-heading centered">
+          <p class="eyebrow" data-i18n="startTag">下一首，从这里开始</p>
+          <h2 data-i18n="startTitle">选择你的练习入口。</h2>
+          <p data-i18n="startDesc">
+            Android 应用与独立网页版，各自发布、各自运行。
+          </p>
+        </div>
+        <div class="start-grid">
+          <article class="start-card android-card">
+            <span class="platform-label">ANDROID APP</span
+            ><span class="platform-icon" aria-hidden="true">↓</span>
+            <h3 data-i18n="androidTitle">在你的 Android 设备上。</h3>
+            <p data-i18n="androidDesc">
+              适合手机与平板，Android 10 及以上。前往 GitHub Releases
+              查看当前安装包与发行说明。
+            </p>
+            <a
+              class="button primary"
+              href="https://github.com/Jimmy-xuzimo/PianoScoreFollower/releases/latest"
+              ><span data-i18n="download">下载 Android 版</span> ↓</a
+            ><span class="start-foot" data-i18n="androidFoot"
+              >APK 通过 GitHub Releases 分发</span
+            >
+          </article>
+          <article class="start-card web-card">
+            <span class="platform-label">WEB EXPERIENCE</span
+            ><span class="platform-icon" aria-hidden="true">↗</span>
+            <h3 data-i18n="webTitle">也可以，先打开浏览器。</h3>
+            <p data-i18n="webDesc">
+              无需安装
+              APK，即可体验独立网页版本。在实际跟谱时，根据浏览器提示允许麦克风访问。
+            </p>
+            <a
+              class="button secondary"
+              href="https://jimmy-xuzimo.github.io/PianoScoreFollower-Web/"
+              ><span data-i18n="tryWeb">体验网页版</span> ↗</a
+            ><a
+              class="start-foot"
+              href="https://github.com/Jimmy-xuzimo/PianoScoreFollower-Web"
+              data-i18n="webFoot"
+              >查看网页版独立仓库 ↗</a
+            >
+          </article>
+        </div>
+        <p class="release-note" data-i18n="releaseNote">
+          本页依据 Android 当前主分支介绍功能，发行包支持情况请以 Release
+          说明为准。首次启动可能需要数秒初始化乐谱引擎与音源。
+        </p>
+      </section>
+
+      <section class="section container faq-section">
+        <div>
+          <p class="eyebrow" data-i18n="faqTag">练习之前</p>
+          <h2 data-i18n="faqTitle">几个你可能关心的问题。</h2>
+          <p class="faq-intro" data-i18n="faqIntro">
+            更多安装说明与已知限制，见项目 README。
+          </p>
+          <a
+            class="text-link"
+            href="https://github.com/Jimmy-xuzimo/PianoScoreFollower#readme"
+            ><span data-i18n="readDocs">阅读文档</span> ↗</a
+          >
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary data-i18n="faq1q">
+              PDF 和照片也能根据声音自动跟谱吗？
+            </summary>
+            <p data-i18n="faq1a">
+              PDF
+              与照片使用定时滚动模式：按顺序排列页面，设定总时长，再调整滚动速度。麦克风驱动的音符匹配与自动跟谱用于
+              MIDI / MusicXML 等结构化乐谱；项目未提供 PDF
+              或照片的乐谱识别转换功能。
+            </p>
+          </details>
+          <details>
+            <summary data-i18n="faq2q">识别效果会受到什么影响？</summary>
+            <p data-i18n="faq2a">
+              跟谱依赖真实麦克风输入。环境噪声、设备麦克风、音量与演奏内容都会影响识别效果。建议在真机上测试，不以模拟器表现作为判断依据；本项目不承诺所有环境下的识别准确率。
+            </p>
+          </details>
+          <details>
+            <summary data-i18n="faq3q">为什么首次启动需要等待？</summary>
+            <p data-i18n="faq3a">
+              首次冷启动需要初始化
+              WebView，并解码采样钢琴音源。部分设备可能需要数秒，模拟器可能更久。加载超时后应用提供重试，后续启动通常更快。
+            </p>
+          </details>
+          <details>
+            <summary data-i18n="faq4q">这个介绍网站会访问麦克风吗？</summary>
+            <p data-i18n="faq4a">
+              不会。本页的跟谱演示只是基于真实截图的视觉动画，不播放音频，也不采集声音。要体验实际识别，请使用
+              Android 应用或独立网页版。
+            </p>
+          </details>
+          <details>
+            <summary data-i18n="faq5q">可以参与开发或二次修改吗？</summary>
+            <p data-i18n="faq5a">
+              项目源码采用 BSD 3-Clause
+              许可证。欢迎查看源码、提交问题或改进；分发时还需保留
+              alphaTab、Bravura 字体及音源等第三方资源对应的许可与署名信息。
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="closing container">
+        <div class="closing-staff" aria-hidden="true">♪</div>
+        <p class="eyebrow" data-i18n="closingTag">
+          A LITTLE LESS FRICTION. A LITTLE MORE MUSIC.
+        </p>
+        <h2 data-i18n="closingTitle">下一段旋律，留给你。</h2>
+        <p data-i18n="closingDesc">让工具安静地陪伴，让练习继续发生。</p>
+        <a
+          class="button primary"
+          href="https://jimmy-xuzimo.github.io/PianoScoreFollower-Web/"
+          ><span data-i18n="closingAction">开始一次练习</span> ↗</a
+        >
+      </section>
+    </main>
+    <footer class="container footer">
+      <div class="footer-top">
+        <a class="brand" href="#"
+          ><span>Piano<span class="brand-light">ScoreFollower</span></span></a
+        >
+        <p data-i18n="footerTag">一个开源的钢琴练习伴侣。</p>
+        <div>
+          <a href="https://github.com/Jimmy-xuzimo/PianoScoreFollower"
+            >GitHub ↗</a
+          ><a
+            href="https://github.com/Jimmy-xuzimo/PianoScoreFollower/issues"
+            data-i18n="feedback"
+            >反馈建议</a
+          ><a href="privacy-policy.html" data-i18n="privacy">隐私政策</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Jimmy-xuzimo</span
+        ><a
+          href="https://github.com/Jimmy-xuzimo/PianoScoreFollower/blob/main/LICENSE"
+          >BSD 3-Clause</a
+        ><span data-i18n="credits">乐谱排版由 alphaTab 提供</span>
+      </div>
+    </footer>
+    <div
+      id="announcement"
+      class="sr-only"
+      role="status"
+      aria-live="polite"
+    ></div>
+  </body>
+</html>

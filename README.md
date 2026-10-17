@@ -1,5 +1,9 @@
 # 智能琴谱 · PianoScoreFollower
 
+**项目官网 / Project website：[jimmy-xuzimo.github.io/PianoScoreFollower](https://jimmy-xuzimo.github.io/PianoScoreFollower/)**
+
+中英双语介绍、真实界面预览与下载入口。官网源码及维护说明见 [website/README.md](website/README.md)。
+
 一个 Android 端的**智能琴谱**应用：导入乐谱、边弹边自动跟谱、自动翻页，并在需要时滚动谱面。
 
 应用由三部分组成——用 Jetpack Compose 写界面，用 [alphaTab](https://www.alphatab.net/) 在 WebView 里排版与发声，用自研的 DSP 管线做音高识别与跟谱对齐。
