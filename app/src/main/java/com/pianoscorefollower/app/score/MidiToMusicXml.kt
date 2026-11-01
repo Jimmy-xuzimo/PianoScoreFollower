@@ -453,7 +453,7 @@ object MidiToMusicXml {
                 if (tempo.value > 0) {
                     val bpm = 60_000_000.0 / tempo.value
                     out.append("<direction placement=\"above\"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>")
-                        .append(bpm).append("</per-minute></metronome></direction-type><offset>")
+                        .append(kotlin.math.round(bpm*100)/100).append("</per-minute></metronome></direction-type><offset>")
                         .append(tempo.tick - bar.start).append("</offset><sound tempo=\"").append(bpm).append("\"/></direction>\n")
                 }
             }

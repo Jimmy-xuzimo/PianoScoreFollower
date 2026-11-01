@@ -77,7 +77,7 @@
         var bars=model(graph,score), quarter=graph.ticksPerQuarter;
         container.appendChild(el('div','numbered-heading',score.title||'钢琴简谱'));
         var first=bars[0], key=first&&first.lanes[0]?first.lanes[0].key:0;
-        container.appendChild(el('div','numbered-meta','1='+names[tonics[key+7]]+'　'+(first?first.meter:'')+'　♩ = '+(score.tempo||120)));
+        container.appendChild(el('div','numbered-meta','1='+names[tonics[key+7]]+'　'+(first?first.meter:'')+'　♩ = '+(Math.round((score.tempo||120)*100)/100)));
         systems(bars,container.clientWidth-32,quarter).forEach(function(group){
             var system=el('section','numbered-system');
             system.appendChild(el('div','numbered-system-number','('+(group[0].bar.index+1)+')'));
