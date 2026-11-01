@@ -15,7 +15,15 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        with:
+          packages: platform-tools
+      - name: Isolate the supported SDK from newer runner platforms
+        run: |
+          mkdir -p "$RUNNER_TEMP/psf-sdk"
+          cp -R "$ANDROID_HOME/licenses" "$RUNNER_TEMP/psf-sdk/licenses"
+          sdkmanager --sdk_root="$RUNNER_TEMP/psf-sdk" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$RUNNER_TEMP/psf-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/psf-sdk" >> "$GITHUB_ENV"
       - uses: gradle/actions/setup-gradle@v4
       - run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --console plain
       - uses: actions/setup-node@v4
