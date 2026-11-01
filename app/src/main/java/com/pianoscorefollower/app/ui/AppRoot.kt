@@ -1,256 +1,155 @@
 package com.pianoscorefollower.app.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import com.pianoscorefollower.app.MainViewModel
 import com.pianoscorefollower.app.audio.AudioViewModel
+import com.pianoscorefollower.app.image.ImageScoreViewModel
 
-/** The three screens the app can be on. */
-enum class AppRoute { Score, Settings, Tuner }
-
-/** Widest the floating bar ever gets; on wider screens it stays centred. */
-private const val BAR_MAX_WIDTH_DP = 620
-
-/** The bar never changes height, so the score can reserve exactly this much. */
-private val BAR_HEIGHT = 64.dp
-
-/** Height plus its margins, i.e. how much of the bottom the score must give up. */
-private val BAR_SPACE = 88.dp
-
-/**
- * Lets the active screen hand its transport controls to the one floating bar.
- *
- * The bar belongs to the root because it has to survive screen switches and sit above
- * everything. Screens publish only their own controls — playback and position — rather
- * than each drawing a bar of its own.
- */
 @Stable
 class BottomBarHost {
     private var owner: Any? = null
-
-    internal var transport: (@Composable RowScope.() -> Unit)? by mutableStateOf(null)
-        private set
-
-    fun setTransport(owner: Any, content: (@Composable RowScope.() -> Unit)?) {
-        this.owner = owner
-        transport = content
-    }
-
-    /**
-     * Clears the bar only if [owner] is still the one on screen. Switching between the
-     * notation and the scrolling score disposes one screen as the other publishes, and
-     * an unconditional clear here would blank the bar the new screen just filled.
-     */
-    fun clearTransport(owner: Any) {
-        if (this.owner === owner) {
-            transport = null
-        }
-    }
+    var transport: (@Composable RowScope.() -> Unit)? by mutableStateOf(null); private set
+    fun setTransport(owner: Any, content: (@Composable RowScope.() -> Unit)?) { this.owner = owner; transport = content }
+    fun clearTransport(owner: Any) { if (this.owner === owner) transport = null }
 }
-
-val LocalBottomBarHost = staticCompositionLocalOf<BottomBarHost> {
-    error("BottomBarHost is only available below AppRoot")
-}
+val LocalBottomBarHost = staticCompositionLocalOf<BottomBarHost> { error("Missing transport host") }
+@Stable class PerformanceChrome { var focused by mutableStateOf(false) }
+val LocalPerformanceChrome = staticCompositionLocalOf { PerformanceChrome() }
+enum class AppRoute { Library, Score, Recording, Tuner, Settings, Scroll }
 
 @Composable
 fun AppRoot(settings: SettingsStore) {
-    var route by rememberSaveable { mutableStateOf(AppRoute.Score) }
-    var barVisible by rememberSaveable { mutableStateOf(true) }
-    val bottomBarHost = remember { BottomBarHost() }
-
-    CompositionLocalProvider(LocalBottomBarHost provides bottomBarHost) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .windowInsetsPadding(WindowInsets.safeDrawing),
-        ) {
-            val transport = bottomBarHost.transport
-            val showBar = route == AppRoute.Score && transport != null && barVisible
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = if (showBar) BAR_SPACE else 0.dp),
-            ) {
+    val main: MainViewModel = viewModel()
+    val audio: AudioViewModel = viewModel()
+    val images: ImageScoreViewModel = viewModel()
+    var route by rememberSaveable { mutableStateOf(AppRoute.Library) }
+    val host = remember { BottomBarHost() }
+    val chrome = remember { PerformanceChrome() }
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(owner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) { if (audio.followState.value.isFollowing) main.rememberPosition(audio.followState.value.cursorTick) else if(main.uiState.value.isPlaying) main.rememberPosition(main.uiState.value.playbackTick); images.setPlaying(false); audio.stopRecording(); audio.stopPlayback(); audio.stopCalibration(); audio.stopListening() }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
+    val state by main.uiState.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val navigate: (AppRoute) -> Unit = { target ->
+        if (route != target) {
+            if (audio.followState.value.isFollowing) main.rememberPosition(audio.followState.value.cursorTick) else if(main.uiState.value.isPlaying) main.rememberPosition(main.uiState.value.playbackTick)
+            audio.stopPlayback(); audio.stopListening(); audio.stopCalibration()
+            if (route == AppRoute.Recording) audio.stopRecording()
+            route = target
+        }
+    }
+    LaunchedEffect(state.errorMessage) { state.errorMessage?.let { snackbar.showSnackbar(it); main.dismissError() } }
+    val entries = listOf(AppRoute.Library to (Icons.Default.LibraryMusic to "曲库"),
+        AppRoute.Score to (Icons.Default.Piano to "演奏"), AppRoute.Recording to (Icons.Default.FiberManualRecord to "录制"),
+        AppRoute.Tuner to (Icons.Default.GraphicEq to "校音"), AppRoute.Settings to (Icons.Default.Settings to "设置"))
+    CompositionLocalProvider(LocalBottomBarHost provides host, LocalPerformanceChrome provides chrome) {
+        Scaffold(contentWindowInsets=if(route==AppRoute.Score) WindowInsets(0,0,0,0) else ScaffoldDefaults.contentWindowInsets, snackbarHost = { SnackbarHost(snackbar) }, bottomBar = {
+            Column {
+                if (route == AppRoute.Scroll) host.transport?.let { content ->
+                    Surface(tonalElevation = 2.dp) { Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) { content() } }
+                }
+                if (route != AppRoute.Score) NavigationBar {
+                    entries.forEach { (item, visual) -> NavigationBarItem(selected = route == item || item == AppRoute.Library && route == AppRoute.Scroll,
+                        onClick = { navigate(item) }, icon = { Icon(visual.first, contentDescription = visual.second) },
+                        label = { Text(visual.second) }) }
+                }
+            }
+        }) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
                 when (route) {
-                    AppRoute.Score -> ScoreScreen(onOpenSettings = { route = AppRoute.Settings })
+                    AppRoute.Library -> LibraryScreen(main, images, onPerform = { navigate(AppRoute.Score) }, onImages = { navigate(AppRoute.Scroll) })
+                    AppRoute.Score -> ScoreScreen(onExit = {navigate(AppRoute.Library)}, onOpenSettings = { navigate(AppRoute.Settings) }, viewModel = main, imageViewModel = images, audioViewModel = audio)
+                    AppRoute.Recording -> RecordingScreen(audio, onOpen = { session -> main.loadRecording(session); navigate(AppRoute.Score) })
+                    AppRoute.Tuner -> CalibrationScreen(audioViewModel = audio, onBack = { navigate(AppRoute.Library) })
+                    AppRoute.Settings -> SettingsScreen(settings, onBack = { navigate(AppRoute.Library) }, onOpenTuner = { navigate(AppRoute.Tuner) })
+                    AppRoute.Scroll -> ImageScoreScreen(viewModel = images, onImport = { navigate(AppRoute.Library) },
+                        onOpenSettings = { navigate(AppRoute.Settings) }, onSwitchToNotation = { navigate(AppRoute.Score) })
+                }
+            }
+        }
+    }
+}
 
-                    AppRoute.Settings -> SettingsScreen(
-                        settings = settings,
-                        onBack = { route = AppRoute.Score },
-                        onOpenTuner = { route = AppRoute.Tuner },
-                    )
-
-                    AppRoute.Tuner -> {
-                        val audioViewModel: AudioViewModel = viewModel()
-                        CalibrationScreen(
-                            audioViewModel = audioViewModel,
-                            onBack = { route = AppRoute.Settings },
-                        )
+@Composable
+private fun LibraryScreen(main: MainViewModel, images: ImageScoreViewModel, onPerform: () -> Unit, onImages: () -> Unit) {
+    val state by main.uiState.collectAsStateWithLifecycle()
+    val imageState by images.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { main.importScore(context.contentResolver, it); onPerform() }
+    }
+    val pdf = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) { images.importPages(uris); onImages() }
+    }
+    val photos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(60)) { uris ->
+        if (uris.isNotEmpty()) { images.importPages(uris); onImages() }
+    }
+    var rename by remember { mutableStateOf<com.pianoscorefollower.app.score.LibraryEntry?>(null) }
+    var name by remember { mutableStateOf("") }
+    var delete by remember { mutableStateOf<com.pianoscorefollower.app.score.LibraryEntry?>(null) }
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(vertical = 20.dp)) {
+        item {
+            Text("智能琴谱", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text("让琴谱跟上你的演奏", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(20.dp))
+            Button(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("导入 MIDI / MusicXML")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { pdf.launch(arrayOf("application/pdf", "image/*")) }, modifier = Modifier.weight(1f)) { Text("PDF / 图片") }
+                OutlinedButton(onClick = { photos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, modifier = Modifier.weight(1f)) { Text("相册照片") }
+            }
+        }
+        if (imageState.hasPages) item { OutlinedCard(onClick = onImages, modifier = Modifier.fillMaxWidth()) {
+            ListItem(headlineContent = { Text("图片滚动谱") }, supportingContent = { Text("${imageState.pages.size} 页 · 定时滚动") }, leadingContent = { Icon(Icons.Default.PictureAsPdf, null) })
+        } }
+        if (state.library.isNotEmpty()) item { Text("我的曲谱", style = MaterialTheme.typography.titleMedium) }
+        items(state.library, key = { it.id }) { entry ->
+            OutlinedCard(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(start = 16.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f).clickable { main.openLibrary(entry.id); onPerform() }.padding(vertical = 8.dp)) {
+                        Text(entry.title, fontWeight = FontWeight.SemiBold)
+                        Text(entry.source.displayName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                }
-            }
-
-            if (route == AppRoute.Score && transport != null && !barVisible) {
-                RevealHandle(
-                    onReveal = { barVisible = true },
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
-            }
-
-            if (route == AppRoute.Score && transport != null) {
-                AnimatedVisibility(
-                    visible = barVisible,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    enter = slideInVertically { height -> height } + fadeIn(tween(120)),
-                    exit = slideOutVertically { height -> height } + fadeOut(tween(120)),
-                ) {
-                    FloatingTransportBar(
-                        onHide = { barVisible = false },
-                        content = transport,
-                    )
+                    IconButton(onClick = { rename = entry; name = entry.title }) { Icon(Icons.Default.Edit, "重命名") }
+                    IconButton(onClick = { delete = entry }) { Icon(Icons.Default.DeleteOutline, "删除曲谱") }
                 }
             }
         }
-    }
-}
-
-/**
- * The single control bar, centred at the bottom of the screen.
- *
- * It is deliberately short and narrow: a piece of glass laid over the score rather than
- * a strip that eats a band of staves. Its height is fixed, so switching between the
- * notation and the scrolling score never reflows the page. Dragging it down dismisses it.
- */
-@Composable
-private fun FloatingTransportBar(
-    onHide: () -> Unit,
-    content: @Composable RowScope.() -> Unit,
-) {
-    Surface(
-        modifier = Modifier
-            .padding(horizontal = 12.dp, vertical = 10.dp)
-            .widthIn(max = BAR_MAX_WIDTH_DP.dp)
-            .fillMaxWidth(0.96f)
-            .height(BAR_HEIGHT)
-            .shadow(14.dp, RoundedCornerShape(28.dp))
-            .pointerInput(Unit) {
-                detectVerticalDragGestures { _, dragAmount ->
-                    if (dragAmount > 8f) onHide()
-                }
-            },
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        shape = RoundedCornerShape(28.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        tonalElevation = 3.dp,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            content()
-        }
-    }
-}
-
-/**
- * The only thing left on screen while the bar is dismissed: a small grab tab at the
- * bottom edge. Swiping it up (or tapping it) brings the bar back.
- */
-@Composable
-private fun RevealHandle(
-    onReveal: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(24.dp)
-            .pointerInput(Unit) {
-                detectVerticalDragGestures { _, dragAmount ->
-                    if (dragAmount < -4f) onReveal()
-                }
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Surface(
-            modifier = Modifier
-                .alpha(0.8f)
-                .clickable(onClick = onReveal),
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowUp,
-                    contentDescription = "显示控制栏",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(14.dp),
-                )
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    text = "控制栏",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium,
-                )
+        item { Text("内置练习", style = MaterialTheme.typography.titleMedium) }
+        items(com.pianoscorefollower.app.score.BuiltInSamples) { sample ->
+            Card(onClick = { main.loadSampleScore(context.assets, sample.assetPath, sample.title); onPerform() }, modifier = Modifier.fillMaxWidth()) {
+                ListItem(headlineContent = { Text(sample.title) }, supportingContent = { Text(sample.subtitle) }, leadingContent = { Icon(Icons.Default.MusicNote, null) })
             }
         }
+        item { Text("MIDI / MusicXML 可听音跟谱；PDF / 照片按设置的时长滚动。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
+    rename?.let { entry -> AlertDialog(onDismissRequest = { rename = null }, title = { Text("曲谱名称") }, text = {
+        OutlinedTextField(name, { name = it }, singleLine = true)
+    }, confirmButton = { TextButton(onClick = { main.renameLibrary(entry.id, name); rename = null }, enabled = name.isNotBlank()) { Text("保存") } }, dismissButton = { TextButton(onClick = { rename = null }) { Text("取消") } }) }
+    delete?.let { entry -> AlertDialog(onDismissRequest = { delete = null }, title = { Text("删除“${entry.title}”？") },
+        confirmButton = { TextButton(onClick = { main.deleteLibrary(entry.id); delete = null }) { Text("删除") } }, dismissButton = { TextButton(onClick = { delete = null }) { Text("取消") } }) }
 }

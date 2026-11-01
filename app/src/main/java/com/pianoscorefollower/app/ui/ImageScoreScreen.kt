@@ -185,6 +185,10 @@ fun ImageScoreScreen(
         }
     }
 
+    LaunchedEffect(listState) {
+        androidx.compose.runtime.snapshotFlow { if (restored && currentLayout.isReady) listState.pixelOffset(currentLayout) else -1 }
+            .collect { offset -> if (offset >= 0) viewModel.saveScrollOffset(offset) }
+    }
     DisposableEffect(Unit) {
         onDispose {
             viewModel.saveScrollOffset(listState.pixelOffset(currentLayout))

@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver android:name=".DebugReceiver" android:exported="true" android:permission="android.permission.DUMP">
+            <intent-filter><action android:name="com.pianoscorefollower.DEBUG" /></intent-filter>
+        </receiver>
+    </application>
+</manifest>

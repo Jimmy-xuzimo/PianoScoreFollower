@@ -25,27 +25,15 @@ internal class ScoreStore(context: Context) {
     private val metaFile: File
         get() = File(directory, META_FILE)
 
-    fun save(score: LoadedScore) {
-        runCatching {
-            dataFile.writeBytes(score.bytes)
-            metaFile.writeText(
-                buildString {
-                    append(escape(score.displayName)).append('\n')
-                    append(score.sourceFormat.name).append('\n')
-                    append(score.renderFormat.name).append('\n')
-                }
-            )
-        }
-    }
-
     fun load(): LoadedScore? {
         val data = dataFile
         val meta = metaFile
-        if (!data.exists() || data.length() == 0L || !meta.exists()) return null
+        if (!data.exists() && !meta.exists()) return null
+        require(data.exists() && data.length()>0 && meta.exists()) { "旧版乐谱文件不完整，原始副本已保留" }
 
         return runCatching {
             val lines = meta.readLines()
-            if (lines.size < 3) return null
+            require(lines.size>=3) { "旧版乐谱元数据损坏，原始副本已保留" }
             val displayName = unescape(lines[0]).ifBlank { "上次打开的乐谱" }
             val sourceFormat = ScoreFormat.valueOf(lines[1])
             val renderFormat = ScoreFormat.valueOf(lines[2])
@@ -55,27 +43,7 @@ internal class ScoreStore(context: Context) {
                 renderFormat = renderFormat,
                 bytes = data.readBytes(),
             )
-        }.getOrNull()
-    }
-
-    fun clear() {
-        runCatching {
-            dataFile.delete()
-            metaFile.delete()
-        }
-    }
-
-    private fun escape(value: String): String {
-        val builder = StringBuilder(value.length)
-        value.forEach { c ->
-            when (c) {
-                '\\' -> builder.append("\\\\")
-                '\n' -> builder.append("\\n")
-                '\r' -> builder.append("\\r")
-                else -> builder.append(c)
-            }
-        }
-        return builder.toString()
+        }.getOrThrow()
     }
 
     private fun unescape(value: String): String {

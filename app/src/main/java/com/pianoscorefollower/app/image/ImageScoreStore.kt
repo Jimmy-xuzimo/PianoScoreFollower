@@ -33,7 +33,10 @@ internal class ImageScoreStore(context: Context) {
         val file = indexFile
         if (!file.exists()) return emptySnapshot()
 
+        val backup = File(directory,"index.legacy-v1.bak")
+        if (!backup.exists()) com.pianoscorefollower.app.score.atomicWrite(backup,file.readBytes())
         return runCatching {
+            require(file.useLines { it.firstOrNull() } == HEADER) { "图片谱索引损坏，原始副本已保留" }
             var duration = DEFAULT_SCROLL_DURATION_SECONDS
             var scroll = 0
             val pages = ArrayList<ImageScorePage>()
@@ -49,7 +52,7 @@ internal class ImageScoreStore(context: Context) {
                 }
             }
             Snapshot(pages, duration, scroll)
-        }.getOrElse { emptySnapshot() }
+        }.getOrThrow()
     }
 
     fun save(pages: List<ImageScorePage>, durationSeconds: Int, scrollOffset: Int) {
@@ -65,8 +68,8 @@ internal class ImageScoreStore(context: Context) {
                     .append(page.height).append('\t')
                     .append(escape(page.sourceName)).append('\n')
             }
-            indexFile.writeText(builder.toString())
-        }
+            com.pianoscorefollower.app.score.atomicWrite(indexFile, builder.toString().toByteArray())
+        }.getOrThrow()
     }
 
     /** Drops the index; used when the whole stack is cleared. */

@@ -44,7 +44,10 @@ class ImageScoreViewModel(application: Application) : AndroidViewModel(applicati
 
     init {
         viewModelScope.launch {
-            val snapshot = withContext(Dispatchers.IO) { store.load() }
+            val snapshot = runCatching { withContext(Dispatchers.IO) { store.load() } }.getOrElse { error ->
+                _uiState.update { it.copy(errorMessage="恢复图片谱失败：${error.message}") }
+                return@launch
+            }
             nextId = (snapshot.pages.maxOfOrNull { it.id } ?: 0L) + 1L
             _uiState.update {
                 it.copy(
@@ -137,6 +140,7 @@ class ImageScoreViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setPlaying(playing: Boolean) {
         _uiState.update { it.copy(isPlaying = playing) }
+        if (!playing) schedulePersist()
     }
 
     fun saveScrollOffset(offset: Int) {
@@ -160,17 +164,17 @@ class ImageScoreViewModel(application: Application) : AndroidViewModel(applicati
      * of a burst reaches the index file.
      */
     private fun schedulePersist() {
-        persistJob?.cancel()
+        if (persistJob?.isActive == true) return
         persistJob = viewModelScope.launch {
             delay(PERSIST_DEBOUNCE_MS)
             val state = _uiState.value
-            withContext(Dispatchers.IO) {
+            runCatching { withContext(Dispatchers.IO) {
                 store.save(state.pages, state.totalDurationSeconds, state.scrollOffset)
-            }
+            } }.onFailure { error -> _uiState.update { it.copy(errorMessage = "保存图片谱失败：${error.message}") } }
         }
     }
 
     private companion object {
-        const val PERSIST_DEBOUNCE_MS = 400L
+        const val PERSIST_DEBOUNCE_MS = 1000L
     }
 }

@@ -90,12 +90,6 @@ fun CalibrationScreen(
         onDispose { audioViewModel.stopCalibration() }
     }
 
-    LaunchedEffect(Unit) {
-        if (!audioViewModel.hasRecordPermission()) {
-            permission.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         // Insets are already consumed by the root column that hosts the tab bar.

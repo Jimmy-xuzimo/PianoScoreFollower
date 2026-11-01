@@ -59,6 +59,14 @@ class CalibrationEngine {
     private var hasCalibration = false
 
     @Synchronized
+    fun restore(cents: Float): Boolean {
+        if (!cents.isFinite() || abs(cents)>REFERENCE_TOLERANCE_CENTS) return false
+        offsetCents=cents;hasCalibration=true
+        _state.value=_state.value.copy(offsetCents=cents,hasCalibration=true)
+        return true
+    }
+
+    @Synchronized
     fun start() {
         readings.clear()
         _state.value = _state.value.copy(

@@ -155,15 +155,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(6.dp))
             SectionLabel("关于")
 
-            SettingsCard {
-                SettingsRow(
-                    title = stringResource(R.string.app_name),
-                    subtitle = "版本 ${BuildConfig.VERSION_NAME}",
-                    leading = null,
-                    trailing = null,
-                    onClick = null,
-                )
-            }
+            OpenSourceAbout()
 
             Spacer(Modifier.height(10.dp))
         }

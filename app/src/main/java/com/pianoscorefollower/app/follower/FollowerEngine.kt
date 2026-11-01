@@ -24,6 +24,9 @@ data class FollowState(
     val isOnset: Boolean = false,
     val onsetPulse: Long = 0L,
     val isReady: Boolean = false,
+    val position: com.pianoscorefollower.app.performance.FollowPosition = com.pianoscorefollower.app.performance.FollowPosition(),
+    val midiNotes: List<Int> = emptyList(),
+    val targetMidiNotes: List<Int> = emptyList(),
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -38,7 +41,7 @@ data class FollowState(
             bestSimilarity == other.bestSimilarity &&
             isOnset == other.isOnset &&
             onsetPulse == other.onsetPulse &&
-            isReady == other.isReady
+            isReady == other.isReady && position == other.position && midiNotes == other.midiNotes && targetMidiNotes == other.targetMidiNotes
     }
 
     override fun hashCode(): Int {
@@ -56,85 +59,89 @@ data class FollowState(
 }
 
 /**
- * Connects the microphone stream to [ScoreFollower] and publishes the cursor.
+ * Connects exact MIDI or Magenta piano onsets to [SymbolicScoreFollower].
  *
- * Runs on the capture thread; the follower's search window is small enough that the
- * extra work per frame is a few hundred multiply-adds.
+ * Runs on the analysis worker; each attachment owns its callbacks and graph.
  */
 class FollowerEngine {
 
     private val _state = MutableStateFlow(FollowState())
     val state: StateFlow<FollowState> = _state.asStateFlow()
 
-    private val follower = ScoreFollower()
+    private var follower=SymbolicScoreFollower(ScoreGraph(emptyList()))
+    private var neuralActive=false
+    private var audioNotBeforeMs=0L
+    private var graph = ScoreGraph(emptyList())
     private var listening: ListeningEngine? = null
     private var onsetPulse = 0L
+    private var inputVersion = 0
+    var observationListener: ((com.pianoscorefollower.app.performance.PerformanceObservation, com.pianoscorefollower.app.performance.FollowPosition) -> Unit)? = null
 
-    fun attach(listeningEngine: ListeningEngine, timeline: ScoreTimeline, bpm: Float) {
+    @Synchronized fun attach(listeningEngine: ListeningEngine?, timeline: ScoreTimeline, bpm: Float,
+        startTick: Long = 0, automatic: Boolean = false) {
         detach()
-        follower.load(timeline)
-        follower.setTempo(bpm)
-        onsetPulse = 0L
-
-        _state.update {
-            it.copy(
-                isFollowing = true,
-                cursorTick = follower.currentTick,
-                measure = follower.currentMeasure,
-                confidence = 0f,
-                isOnset = false,
-                isReady = !timeline.isEmpty,
-            )
-        }
-
+        graph = ScoreGraph.from(timeline)
+        follower=SymbolicScoreFollower(graph,startTick,automatic)
+        neuralActive=false
+        audioNotBeforeMs=System.nanoTime()/1_000_000
+        onsetPulse = 0
+        _state.value = FollowState(isFollowing = true, isReady = graph.events.isNotEmpty())
+        publish(follower.position)
         listening = listeningEngine
-        listeningEngine.frameListener = ::onFrame
+        val version=inputVersion
+        listeningEngine?.frameListener = { frame -> onFrame(frame,version) }
     }
 
-    fun detach() {
+    @Synchronized fun detach() {
+        inputVersion++
         listening?.frameListener = null
         listening = null
         _state.update { it.copy(isFollowing = false, confidence = 0f, isOnset = false) }
     }
 
-    fun seekToStart() {
-        follower.reset()
-        _state.update {
-            it.copy(
-                cursorTick = follower.currentTick,
-                measure = follower.currentMeasure,
-                confidence = 0f,
-            )
-        }
+    fun seekToStart() = seekTo(0)
+    @Synchronized fun seekTo(tick: Long) {
+        audioNotBeforeMs=System.nanoTime()/1_000_000;neuralActive=false
+        follower.seek(tick)
+        publish(follower.position)
     }
-
-    private fun onFrame(frame: AudioFrame) {
-        val chroma = frame.chroma
-        // Chroma is L2-normalised, so the strongest bin is ~0.29 even on silence.
-        // Whether anything is actually sounding can only be read off the level.
-        val sounding = frame.levelDb >= frame.noiseFloorDb + DOMINANT_GATE_MARGIN_DB &&
-            frame.levelDb >= MIN_DOMINANT_LEVEL_DB
-
-        val now = System.currentTimeMillis()
-        val matched = follower.onFrame(chroma, frame.isOnset, now)
-        if (matched) {
-            follower.onOnsetMatched(now)
-            onsetPulse++
+    @Synchronized fun accept(observation: com.pianoscorefollower.app.performance.PerformanceObservation) {
+        if (!_state.value.isFollowing) return
+        val position = follower.accept(observation)
+        publish(position)
+        observationListener?.invoke(observation, position)
+        val peak=observation.pitches.maxOrNull() ?: 0f
+        _state.update { it.copy(midiNotes = if(observation.active && peak>0f)
+            observation.pitches.indices.filter { n -> observation.pitches[n]>=maxOf(if(observation.exact)0.001f else .5f,peak*0.5f) }
+                .sortedByDescending { n -> observation.pitches[n] }.take(6) else emptyList()) }
+    }
+    private fun publish(p: com.pianoscorefollower.app.performance.FollowPosition) {
+        _state.update { it.copy(cursorTick = p.tick, measure = p.measure, confidence = p.confidence,
+            bestSimilarity = p.similarity, position = p,
+            targetMidiNotes = graph.events.getOrNull(p.eventIndex)?.pitches?.toList().orEmpty(),
+            targetPitchClasses = graph.events.getOrNull(p.eventIndex)?.pitches?.map { n -> n % 12 }?.distinct().orEmpty()) }
+    }
+    @Synchronized fun acceptAudio(frame:AudioFrame) { onFrame(frame,inputVersion) }
+    @Synchronized private fun onFrame(frame: AudioFrame, version: Int) {
+        if(version!=inputVersion) return
+        if(!_state.value.isFollowing)return
+        val now=frame.sampleTimeMs.takeIf{it>0}?:System.nanoTime()/1_000_000
+        if(now<audioNotBeforeMs)return
+        val base=now-frame.audioTimeMs
+        var attack=false
+        for(n in frame.neural){
+            if(base+n.onsetTimeMs<audioNotBeforeMs)continue
+            val onset=n.attacks.any{it>=.5f};attack=attack||onset
+            neuralActive=onset||n.pitches.any{it>=.5f}
+            accept(com.pianoscorefollower.app.performance.PerformanceObservation(
+                base+n.availableTimeMs,n.pitches,onset,neuralActive,
+                analysisLatencyMs=n.availableTimeMs-n.onsetTimeMs,attacks=n.attacks))
         }
-
-        _state.update {
-            it.copy(
-                cursorTick = follower.predictedTick(now),
-                measure = follower.currentMeasure,
-                confidence = follower.confidenceScore,
-                chroma = chroma.toList(),
-                topPitchClasses = if (sounding) topPitchClasses(chroma) else emptyList(),
-                targetPitchClasses = follower.targetPitchClasses.toList(),
-                bestSimilarity = follower.similarity,
-                isOnset = matched,
-                onsetPulse = onsetPulse,
-            )
-        }
+        val sounding=frame.levelDb>=-65f&&neuralActive
+        publish(follower.advance(now,sounding))
+        _state.update { it.copy(chroma = frame.chroma.toList(),
+            topPitchClasses = if (sounding) topPitchClasses(frame.chroma) else emptyList(),
+            isOnset = attack, onsetPulse = if (attack) ++onsetPulse else onsetPulse) }
     }
 
     /**

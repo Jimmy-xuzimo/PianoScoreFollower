@@ -67,6 +67,7 @@ data class LoadedScore(
     val renderFormat: ScoreFormat,
     val bytes: ByteArray,
     val sizeBytes: Long = bytes.size.toLong(),
+    val originalBytes: ByteArray? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -99,6 +100,7 @@ data class LoadedScore(
                     sourceFormat = sourceFormat,
                     renderFormat = ScoreFormat.MUSIC_XML,
                     bytes = xml,
+                    originalBytes = bytes.copyOf(),
                 )
             } else {
                 LoadedScore(
@@ -106,6 +108,7 @@ data class LoadedScore(
                     sourceFormat = sourceFormat,
                     renderFormat = sourceFormat,
                     bytes = bytes,
+                    originalBytes = bytes.copyOf(),
                 )
             }
         }

@@ -43,3 +43,7 @@ For a repository/domain change, update canonical and Open Graph URLs. Keep `priv
 ## Verify changes
 
 Check narrow mobile, landscape mobile, tablet in both orientations, desktop and large screens. Verify Chinese/English, both themes, system-theme updates, saved preferences, screenshot tabs, illustration play/pause/reset, reduced motion, navigation, release/web links and the existing privacy policy URL. Test under the project subpath as well as a local root.
+
+## Android 1.0 content
+
+The page now documents the native Magenta / Parangonar pipeline, score-constrained prediction, USB MIDI recording, assessment, two-row Jianpu, dark performance mode and bundled open-source notices. It does not imply feature parity with the independent web application. Screenshots are from the 1.0 Android build. Recovery limitations remain explicit. Browser regression: `node tools/verify-website.cjs <URL> <output>` with Playwright and Chrome installed.

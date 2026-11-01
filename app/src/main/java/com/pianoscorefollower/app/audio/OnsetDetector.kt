@@ -6,6 +6,7 @@ internal data class OnsetFrame(
     val flux: Float,
     val threshold: Float,
     val isOnset: Boolean,
+    val rearticulation: Boolean = true,
 )
 
 /**
@@ -38,6 +39,8 @@ internal class OnsetDetector(
     private var frameIndex = 0
     private var lastOnsetFrame = -1_000
     private var previousFlux = 0f
+    private var previousEnergy = 0f
+    private var previousEnergy2 = 0f
 
     private val refractoryFrames = (
         (sampleRate * AudioConfig.MIN_ONSET_GAP_MS) / 1000.0 / hopSize
@@ -54,6 +57,7 @@ internal class OnsetDetector(
         frameIndex = 0
         lastOnsetFrame = -1_000
         previousFlux = 0f
+        previousEnergy = 0f; previousEnergy2 = 0f
     }
 
     /**
@@ -76,6 +80,11 @@ internal class OnsetDetector(
             previousMagnitude[bin] = magnitude[bin]
         }
 
+        var energy = 0f
+        for (sample in windowSamples) energy += sample*sample
+        val risingEnergy = energy > minOf(previousEnergy, previousEnergy2) * 1.12f
+        previousEnergy2 = previousEnergy
+        previousEnergy = energy
         val threshold = medianOfHistory() * THRESHOLD_MULTIPLIER + THRESHOLD_OFFSET
         val isOnset = gateOpen &&
             frameIndex >= WARMUP_FRAMES &&
@@ -88,7 +97,7 @@ internal class OnsetDetector(
         previousFlux = flux
         frameIndex++
 
-        return OnsetFrame(flux = flux, threshold = threshold, isOnset = isOnset)
+        return OnsetFrame(flux = flux, threshold = threshold, isOnset = isOnset, rearticulation = risingEnergy)
     }
 
     private fun pushHistory(value: Float) {
@@ -111,7 +120,7 @@ internal class OnsetDetector(
 
     private companion object {
         const val HISTORY_SIZE = 24
-        const val THRESHOLD_MULTIPLIER = 2.2f
+        const val THRESHOLD_MULTIPLIER = 1.6f
         const val THRESHOLD_OFFSET = 0.015f
         const val WARMUP_FRAMES = 4
     }

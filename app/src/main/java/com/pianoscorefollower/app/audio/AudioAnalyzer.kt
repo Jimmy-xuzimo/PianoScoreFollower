@@ -10,17 +10,25 @@ import kotlin.math.sqrt
 internal class AudioAnalyzer(
     private val hopSize: Int = AudioConfig.HOP_SIZE,
     private val fftSize: Int = AudioConfig.FFT_SIZE,
-    sampleRate: Int = AudioConfig.SAMPLE_RATE,
+    private val sampleRate: Int = AudioConfig.SAMPLE_RATE,
+    model:MagentaPianoModel?=null,
+    initialTuningCents:Float=0f,
 ) {
 
-    private val onsetDetector = OnsetDetector(hopSize = hopSize, fftSize = fftSize, sampleRate = sampleRate)
-    private val chromaExtractor = ChromaExtractor(sampleRate = sampleRate)
-    private val pitchDetector = PitchDetector(sampleRate = sampleRate, fftSize = AudioConfig.CHROMA_FFT_SIZE)
+    private val onsetDetector by lazy { OnsetDetector(hopSize = hopSize, fftSize = fftSize, sampleRate = sampleRate) }
+    private val piano by lazy { PianoFeatures(sampleRate) }
+    private val neural=model?.let{it.Stream(sampleRate,initialTuningCents)}
+    private var inputSamples=0L
+    private var lastNeuralPitches=FloatArray(128)
+    var tuningCents: Float=initialTuningCents
+        set(value) { field=value;if(neural==null)piano.tuningCents = value }
+    private val chromaExtractor by lazy { ChromaExtractor(sampleRate = sampleRate) }
+    private val pitchDetector by lazy { PitchDetector(sampleRate = sampleRate, fftSize = AudioConfig.CHROMA_FFT_SIZE) }
     private val windowBuffer = FloatArray(fftSize)
 
     /**
-     * Switches on the extra fundamental-frequency estimate. The score follower works
-     * from pitch classes alone, so the calibration screen is the only consumer and the
+     * Switches on the extra fundamental-frequency estimate. The score follower uses polyphonic pitch features;
+     * the calibration screen is the only consumer of this extra fundamental estimate and the
      * cost is not paid on the following path.
      */
     var pitchDetectionEnabled: Boolean = false
@@ -28,17 +36,12 @@ internal class AudioAnalyzer(
     /** Sliding window for the chroma stage; longer than the onset window on purpose. */
     private val chromaBuffer = FloatArray(AudioConfig.CHROMA_FFT_SIZE)
 
-    /**
-     * Hops by which the onset flag trails the chroma it is reported with.
-     *
-     * The chroma window is far longer than the attack it is meant to describe, so a
-     * flag raised at the instant of the attack would arrive with a window that is still
-     * mostly the *previous* note — the "I played it and nothing happened" case. Half a
-     * window centres the analysis on the attack: the Hann taper discards the previous
-     * note's tail, the new note's attack sits at the window's peak, and the delay stays
-     * short enough that a fast passage's next note cannot bleed in.
-     */
-    private val onsetDelayHops = (AudioConfig.CHROMA_FFT_SIZE / hopSize / 2).coerceAtLeast(0)
+    /** Allow the fast harmonic window to settle before reporting each attack.
+     * Bass evidence keeps its longer window; the exact delay accompanies every
+     * frame so 44.1 and 48 kHz inputs use the correct time compensation. */
+    private val onsetDelayHops = (AudioConfig.CHROMA_FFT_SIZE * 5 / 8 / hopSize).coerceAtLeast(0)
+    private val analysisLatencyMs = onsetDelayHops * hopSize * 1000L / sampleRate
+    private val pendingRearticulations = ArrayDeque<Boolean>()
     private val pendingOnsets = ArrayDeque<Boolean>(onsetDelayHops + 1)
 
     private val minSignalBin = (MIN_SIGNAL_HZ * fftSize / sampleRate).toInt().coerceAtLeast(1)
@@ -52,6 +55,34 @@ internal class AudioAnalyzer(
 
     /** [hop] must hold exactly [hopSize] samples, and the caller must not mutate it. */
     fun accept(hop: FloatArray): AudioFrame {
+        inputSamples+=hop.size
+        val neuralFrames=neural?.accept(hop).orEmpty()
+        if(neural!=null){
+            return decodedPianoFrame(hop,neuralFrames)
+        }
+        return legacyFrame(hop,neuralFrames)
+    }
+
+    /** Replay seam after inference, also used by the live neural branch. Cached
+     * frames must contain only results available by the end of this PCM hop. */
+    internal fun acceptDecodedPianoFrames(hop:FloatArray,frames:List<NeuralPianoFrame>):AudioFrame {
+        inputSamples+=hop.size
+        return decodedPianoFrame(hop,frames)
+    }
+
+    private fun decodedPianoFrame(hop:FloatArray,neuralFrames:List<NeuralPianoFrame>):AudioFrame {
+            neuralFrames.lastOrNull()?.let{lastNeuralPitches=it.pitches}
+            var sum=0.0;for(x in hop)sum+=x.toDouble()*x
+            val db=AudioConfig.toDb(sqrt(sum/hop.size).toFloat())
+            smoothedDb+= (db-smoothedDb)*(if(db>smoothedDb)ATTACK else RELEASE)
+            peakDb=maxOf(db,peakDb-PEAK_DECAY_DB)
+            if(!hasNoiseEstimate){noiseFloorDb=db;hasNoiseEstimate=true}else noiseFloorDb+= (db-noiseFloorDb)*(if(db<noiseFloorDb)NOISE_TRACK_DOWN else NOISE_TRACK_UP)
+            val classes=FloatArray(12)
+            lastNeuralPitches.forEachIndexed { n,p -> if(p>=.5f)classes[n%12]+=p }
+            return AudioFrame(smoothedDb,peakDb,noiseFloorDb,neuralFrames.any{f->f.attacks.any{it>=.5f}},0f,0f,classes,
+                pitches=lastNeuralPitches,analysisLatencyMs=128,neural=neuralFrames,audioTimeMs=inputSamples*1000/sampleRate)
+    }
+    private fun legacyFrame(hop:FloatArray,neuralFrames:List<NeuralPianoFrame>):AudioFrame {
         System.arraycopy(windowBuffer, hopSize, windowBuffer, 0, fftSize - hopSize)
         System.arraycopy(hop, 0, windowBuffer, fftSize - hopSize, hopSize)
 
@@ -93,7 +124,10 @@ internal class AudioAnalyzer(
             if (value > peakMagnitude) peakMagnitude = value
         }
 
+        pendingRearticulations.addLast(onset.rearticulation)
+        val repeatAttack = if (pendingRearticulations.size > onsetDelayHops) pendingRearticulations.removeFirst() else false
         val chroma = chromaExtractor.extract(chromaBuffer)
+        val pitches = piano.accept(hop)
         val pitch = if (pitchDetectionEnabled) {
             pitchDetector.estimate(chromaExtractor.spectrum)
         } else {
@@ -110,6 +144,11 @@ internal class AudioAnalyzer(
             chroma = chroma,
             pitchHz = pitch.frequencyHz,
             pitchConfidence = pitch.confidence,
+            pitches = pitches,
+            rearticulation = repeatAttack,
+            analysisLatencyMs = analysisLatencyMs,
+            neural=neuralFrames,
+            audioTimeMs=inputSamples*1000/sampleRate,
         )
     }
 
@@ -126,7 +165,7 @@ internal class AudioAnalyzer(
         const val RELEASE = 0.12f
         const val PEAK_DECAY_DB = 0.55f
         const val NOISE_TRACK_DOWN = 0.25f
-        const val NOISE_TRACK_UP = 0.002f
+        const val NOISE_TRACK_UP = 0.00005f
         const val ONSET_GATE_MARGIN_DB = 6f
         const val MIN_ONSET_LEVEL_DB = -60f
 

@@ -1,5 +1,6 @@
 package com.pianoscorefollower.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -56,6 +57,7 @@ private const val GALLERY_MAX_ITEMS = 60
  */
 @Composable
 fun ScoreScreen(
+    onExit: () -> Unit,
     onOpenSettings: () -> Unit,
     viewModel: MainViewModel = viewModel(),
     imageViewModel: ImageScoreViewModel = viewModel(),
@@ -68,23 +70,6 @@ fun ScoreScreen(
     var mode by rememberSaveable { mutableStateOf(ScoreMode.Notation) }
     var modePicked by rememberSaveable { mutableStateOf(false) }
     var chooserOpen by remember { mutableStateOf(false) }
-
-    // Whatever was restored from disk decides the opening mode. Both view models load
-    // asynchronously, so this waits for the first one that has something to show.
-    LaunchedEffect(scoreState.loadedScore, imageState.pages.size) {
-        if (modePicked) return@LaunchedEffect
-        when {
-            scoreState.loadedScore != null -> {
-                mode = ScoreMode.Notation
-                modePicked = true
-            }
-
-            imageState.pages.isNotEmpty() -> {
-                mode = ScoreMode.Scroll
-                modePicked = true
-            }
-        }
-    }
 
     val scorePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -122,6 +107,7 @@ fun ScoreScreen(
         viewModel.loadSampleScore(context.assets, sample.assetPath, sample.title)
     }
 
+    BackHandler(enabled=mode==ScoreMode.Scroll) { onExit() }
     val showChooser = { chooserOpen = true }
 
     when (mode) {
@@ -129,6 +115,7 @@ fun ScoreScreen(
             viewModel = viewModel,
             audioViewModel = audioViewModel,
             onImport = showChooser,
+            onExit = onExit,
             onLoadSample = loadSample,
             onOpenSettings = onOpenSettings,
             onSwitchToScroll = if (imageState.pages.isNotEmpty()) {

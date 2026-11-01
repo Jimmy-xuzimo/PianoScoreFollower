@@ -25,9 +25,24 @@ object MidiToMusicXml {
     /** Middle C. Below it a note is treated as left-hand material when splitting. */
     private const val SPLIT_PITCH = 60
 
-    fun convert(bytes: ByteArray): String {
+    fun convert(bytes: ByteArray, gridDenominator: Int = 16, forceGrandStaff: Boolean = false): String {
+        require(gridDenominator in listOf(4, 8, 16, 32))
         val midi = MidiReader.read(bytes)
-        return MusicXmlBuilder(midi).build()
+        val tracks = midi.tracks.filter { it.notes.isNotEmpty() }
+        if (!forceGrandStaff && (tracks.size > 2 || tracks.any { it.program !in 0..7 })) {
+            val parts = tracks.mapIndexed { index, track ->
+                val single = MidiFile(midi.division, listOf(track), midi.timeSignatures, midi.keySignatures, midi.tempos)
+                val xml = MusicXmlBuilder(single, gridDenominator, false).build()
+                val id = "P${index+1}"
+                val title = (track.name ?: "Track ${index+1}").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                val definition = "<score-part id=\"$id\"><part-name>$title</part-name><midi-instrument id=\"I${index+1}\"><midi-channel>${index%15+1}</midi-channel><midi-program>${track.program+1}</midi-program></midi-instrument></score-part>"
+                val body = xml.substringAfter("<part id=\"P1\">").substringBeforeLast("</part>")
+                definition to "<part id=\"$id\">$body</part>"
+            }
+            return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><score-partwise version=\"3.1\"><part-list>" +
+                parts.joinToString("") { it.first } + "</part-list>" + parts.joinToString("") { it.second } + "</score-partwise>"
+        }
+        return MusicXmlBuilder(midi, gridDenominator, forceGrandStaff).build()
     }
 
     /* ------------------------------------------------------------------ */
@@ -42,7 +57,7 @@ object MidiToMusicXml {
 
     internal class MidiNote(val startTick: Long, val endTick: Long, val pitch: Int)
 
-    internal class MidiTrack(val name: String?, val notes: List<MidiNote>)
+    internal class MidiTrack(val name: String?, val notes: List<MidiNote>, val program: Int = 0)
 
     internal class MidiFile(
         val division: Int,
@@ -95,6 +110,7 @@ object MidiToMusicXml {
             }
 
             fun skip(count: Int) {
+                if (count < 0 || pos.toLong() + count > data.size) throw MidiConversionException("MIDI 数据长度错误")
                 pos += count
             }
         }
@@ -131,7 +147,8 @@ object MidiToMusicXml {
             while (parsed < limit && cursor.pos + 8 <= bytes.size && cursor.peekAscii(4) == "MTrk") {
                 cursor.skip(4)
                 val trackLength = cursor.u32()
-                val trackEnd = (cursor.pos + trackLength).coerceAtMost(bytes.size)
+                if (trackLength < 0 || cursor.pos.toLong() + trackLength > bytes.size) throw MidiConversionException("MIDI 音轨长度错误")
+                val trackEnd = cursor.pos + trackLength
 
                 val track = readTrack(
                     cursor = cursor,
@@ -171,6 +188,7 @@ object MidiToMusicXml {
             var tick = 0L
             var runningStatus = 0
             var name: String? = null
+            var program = 0
 
             while (cursor.pos < trackEnd) {
                 tick += cursor.varLen()
@@ -248,7 +266,8 @@ object MidiToMusicXml {
                             }
 
                             0xA0, 0xB0, 0xE0 -> cursor.skip(2)
-                            0xC0, 0xD0 -> cursor.skip(1)
+                            0xC0 -> program = cursor.u8()
+                            0xD0 -> cursor.skip(1)
                             else -> cursor.skip(1)
                         }
                     }
@@ -269,7 +288,7 @@ object MidiToMusicXml {
                 if (tick > start) notes.add(MidiNote(start, tick, key and 0xFF))
             }
 
-            return MidiTrack(name, notes)
+            return MidiTrack(name, notes, program)
         }
 
         private fun closeNote(
@@ -302,7 +321,7 @@ object MidiToMusicXml {
 
     private class StaffedNote(val note: MidiNote, val staff: Int)
 
-    private class MusicXmlBuilder(private val midi: MidiFile) {
+    private class MusicXmlBuilder(private val midi: MidiFile, private val gridDenominator: Int, private val forceGrandStaff: Boolean) {
 
         private val division = midi.division.toLong()
 
@@ -312,7 +331,7 @@ object MidiToMusicXml {
          * offsets are snapped to a sixteenth-note grid so the result reads as real
          * notation instead of arbitrary tuplets.
          */
-        private val gridTicks = maxOf(1L, division / 4)
+        private val gridTicks = maxOf(1L, division * 4 / gridDenominator)
 
         private val bars: List<Bar> = buildBars()
 
@@ -327,6 +346,7 @@ object MidiToMusicXml {
          * staff no matter how wide its range is.
          */
         private val staffCount: Int = when {
+            forceGrandStaff -> 2
             splitByTrack -> 2
             hasChordsAcrossMiddleC() -> 2
             else -> 1
@@ -419,7 +439,7 @@ object MidiToMusicXml {
                 previousTime = activeTime
                 previousKey = activeKey
 
-                if (barIndex == 0) writeTempo(out)
+                writeTempo(out, bar)
 
                 writeBarContent(out, bar, segments, barIndex)
                 out.append("    </measure>\n")
@@ -428,18 +448,15 @@ object MidiToMusicXml {
             out.append("  </part>\n")
         }
 
-        private fun writeTempo(out: StringBuilder) {
-            val micros = midi.tempos.firstOrNull { it.tick <= 0 }?.value
-                ?: midi.tempos.firstOrNull()?.value
-                ?: return
-            val bpm = (60_000_000.0 / micros).toInt().coerceIn(20, 400)
-            out.append("      <direction placement=\"above\">\n")
-            out.append("        <direction-type>\n")
-            out.append("          <metronome><beat-unit>quarter</beat-unit><per-minute>")
-                .append(bpm).append("</per-minute></metronome>\n")
-            out.append("        </direction-type>\n")
-            out.append("        <sound tempo=\"").append(bpm).append("\"/>\n")
-            out.append("      </direction>\n")
+        private fun writeTempo(out: StringBuilder, bar: Bar) {
+            midi.tempos.filter { it.tick >= bar.start && it.tick < bar.end }.forEach { tempo ->
+                if (tempo.value > 0) {
+                    val bpm = 60_000_000.0 / tempo.value
+                    out.append("<direction placement=\"above\"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>")
+                        .append(bpm).append("</per-minute></metronome></direction-type><offset>")
+                        .append(tempo.tick - bar.start).append("</offset><sound tempo=\"").append(bpm).append("\"/></direction>\n")
+                }
+            }
         }
 
         private fun writeBarContent(

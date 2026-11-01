@@ -12,14 +12,14 @@ data class SampleScore(
 
 val BuiltInSamples: List<SampleScore> = listOf(
     SampleScore(
-        assetPath = "samples/the_truth_that_you_leave.mid",
-        title = "The Truth That You Leave（你离开的事实）",
-        subtitle = "Pianoboy 高至豪 · 116 小节 · 双手完整曲目",
-    ),
-    SampleScore(
         assetPath = "samples/c_major_study.musicxml",
         title = "C 大调练习曲（32 小节）",
         subtitle = "MusicXML · 多页排版与自动翻页测试",
+    ),
+    SampleScore(
+        assetPath = "samples/the_truth_that_you_leave.mid",
+        title = "The Truth That You Leave（你离开的事实）",
+        subtitle = "Pianoboy 高至豪 · 116 小节 · 双手完整曲目",
     ),
     SampleScore(
         assetPath = "samples/c_major_scale.mid",

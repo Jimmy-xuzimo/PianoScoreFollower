@@ -107,7 +107,7 @@
         <div class="hero-copy">
           <div class="eyebrow">
             <span class="tiny-note" aria-hidden="true">♪</span
-            ><span data-i18n="heroTag">给每一次专注的练习</span>
+            ><span data-i18n="heroTag">智能琴谱 1.0 · Android 正式版</span>
           </div>
           <h1 id="hero-title">
             <span data-i18n="hero1">让乐谱，</span><br /><em data-i18n="hero2"
@@ -130,9 +130,7 @@
               ><span aria-hidden="true">↗</span></a
             >
           </div>
-          <p class="hero-note" data-i18n="heroNote">
-            开源 · Android 10+ · 独立网页版
-          </p>
+          <p class="hero-note" data-i18n="heroNote">开源 · Android 10+ · 钢琴练习</p>
         </div>
         <div class="hero-visual">
           <div class="visual-halo" aria-hidden="true"></div>
@@ -237,21 +235,14 @@
             <span class="feature-icon" aria-hidden="true">⌁</span
             ><span class="feature-number">01</span>
             <h3 data-i18n="followTitle">你弹到哪，谱跟到哪。</h3>
-            <p data-i18n="followDesc">
-              通过麦克风识别音高，与结构化乐谱匹配，驱动光标前进。逐行跟随与自动翻页，让目光更从容。
-            </p>
+            <p data-i18n="followDesc">通过麦克风或 USB MIDI 获取演奏，用完整音高、起音与速度对齐 MIDI / MusicXML。乐谱约束预测让光标连续前进，低置信度时暂停翻页。</p>
             <div class="signal" aria-hidden="true">
               <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
               ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
               ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
             </div>
             <span class="feature-foot" data-i18n="followFoot"
-              >实时识别 · 逐行跟随 · 自动翻页</span
-            >
-          </article>
-          <article class="feature feature-scroll">
-            <span class="feature-icon" aria-hidden="true">▤</span
-            ><span class="feature-number">02</span>
+              >钢琴模型 · 序列对齐 · 预测跟随</span>
             <h3 data-i18n="scrollTitle">纸上的谱，也能流动。</h3>
             <p data-i18n="scrollDesc">
               导入 PDF
@@ -425,10 +416,7 @@
           <article>
             <span class="step-number">02</span>
             <h3 data-i18n="step2Title">选一种练习方式</h3>
-            <p data-i18n="step2Desc">
-              结构化乐谱可开启麦克风跟谱；PDF
-              与照片设定滚动时长。需要时，先用中央 C 校准。
-            </p>
+            <p data-i18n="step2Desc">选择听音或 USB MIDI 跟谱，也可录制 MIDI 并导出；PDF 与照片使用定时滚动。</p>
           </article>
           <article>
             <span class="step-number">03</span>
@@ -445,10 +433,7 @@
           <div>
             <p class="eyebrow" data-i18n="craftTag">开放的代码，认真的细节</p>
             <h2 data-i18n="craftTitle">音乐之外，\n也值得仔细打磨。</h2>
-            <p data-i18n="craftDesc">
-              原生 Android 界面、alphaTab 乐谱引擎与自研 DSP
-              管线共同工作。从音频采集到跟谱对齐，源码都在这里。
-            </p>
+            <p data-i18n="craftDesc">Google 官方 Compose Material 3、alphaTab、Magenta 实时钢琴模型和 Parangonar 在线对齐协作。输入、模型与评分都在设备本地处理。</p>
             <a
               class="text-link"
               href="https://github.com/Jimmy-xuzimo/PianoScoreFollower"
@@ -471,8 +456,8 @@
             </div>
             <div>
               <span>03 / LISTENING</span
-              ><strong>FFT · Chroma · ScoreFollower</strong>
-              <p data-i18n="craftDsp">音高检测、色度特征与跟谱对齐管线。</p>
+              ><strong>Magenta · LiteRT · Parangonar</strong>
+              <p data-i18n="craftDsp">Magenta / LiteRT 钢琴音符推理、Parangonar 对齐与乐谱约束预测。</p>
             </div>
           </div>
         </div>
@@ -482,19 +467,14 @@
         <div class="section-heading centered">
           <p class="eyebrow" data-i18n="startTag">下一首，从这里开始</p>
           <h2 data-i18n="startTitle">选择你的练习入口。</h2>
-          <p data-i18n="startDesc">
-            Android 应用与独立网页版，各自发布、各自运行。
-          </p>
+          <p data-i18n="startDesc">Android 1.0 已重构；独立网页版单独维护，不代表相同算法或功能。</p>
         </div>
         <div class="start-grid">
           <article class="start-card android-card">
             <span class="platform-label">ANDROID APP</span
             ><span class="platform-icon" aria-hidden="true">↓</span>
             <h3 data-i18n="androidTitle">在你的 Android 设备上。</h3>
-            <p data-i18n="androidDesc">
-              适合手机与平板，Android 10 及以上。前往 GitHub Releases
-              查看当前安装包与发行说明。
-            </p>
+            <p data-i18n="androidDesc">Android 10 及以上手机与平板。下载 v1.0.0，查看正式版变更、已知限制与测试报告。</p>
             <a
               class="button primary"
               href="https://github.com/Jimmy-xuzimo/PianoScoreFollower/releases/latest"
@@ -523,10 +503,7 @@
             >
           </article>
         </div>
-        <p class="release-note" data-i18n="releaseNote">
-          本页依据 Android 当前主分支介绍功能，发行包支持情况请以 Release
-          说明为准。首次启动可能需要数秒初始化乐谱引擎与音源。
-        </p>
+        <p class="release-note" data-i18n="releaseNote">1.0.0：深色演奏、白色琴谱、五线谱／简谱切换、音高与节奏评分、USB MIDI 录制和导出。定位回归已达 97% 以上；重弹恢复仍有延迟，实体麦克风和 USB 硬件需按设备验证。</p>
       </section>
 
       <section class="section container faq-section">
@@ -562,10 +539,7 @@
           </details>
           <details>
             <summary data-i18n="faq3q">为什么首次启动需要等待？</summary>
-            <p data-i18n="faq3a">
-              首次冷启动需要初始化
-              WebView，并解码采样钢琴音源。部分设备可能需要数秒，模拟器可能更久。加载超时后应用提供重试，后续启动通常更快。
-            </p>
+            <p data-i18n="faq3a">跟谱首次准备会加载本地钢琴模型，不等待播放音源。示范播放的钢琴音源按需加载，失败可重试。</p>
           </details>
           <details>
             <summary data-i18n="faq4q">这个介绍网站会访问麦克风吗？</summary>
@@ -576,11 +550,7 @@
           </details>
           <details>
             <summary data-i18n="faq5q">可以参与开发或二次修改吗？</summary>
-            <p data-i18n="faq5a">
-              项目源码采用 BSD 3-Clause
-              许可证。欢迎查看源码、提交问题或改进；分发时还需保留
-              alphaTab、Bravura 字体及音源等第三方资源对应的许可与署名信息。
-            </p>
+            <p data-i18n="faq5a">应用原创代码采用 BSD 3-Clause；Magenta、Parangonar、LiteRT 和 AndroidX 为 Apache 2.0，alphaTab 为 MPL 2.0，Bravura 为 SIL OFL，FreePats 音源为 CC0。应用关于页提供协议全文和上游来源。</p>
           </details>
         </div>
       </section>
@@ -620,7 +590,7 @@
         ><a
           href="https://github.com/Jimmy-xuzimo/PianoScoreFollower/blob/main/LICENSE"
           >BSD 3-Clause</a
-        ><span data-i18n="credits">乐谱排版由 alphaTab 提供</span>
+        ><span data-i18n="credits">开源署名与第三方协议见应用关于页及仓库</span>
       </div>
     </footer>
     <div

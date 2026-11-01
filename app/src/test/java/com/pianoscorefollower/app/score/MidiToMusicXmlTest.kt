@@ -29,7 +29,7 @@ class MidiToMusicXmlTest {
 
         // The file is in Bb major (two flats), not the C major default.
         assertTrue("expected a Bb key signature", xml.contains("<fifths>-2</fifths>"))
-        assertTrue("expected tempo 130", xml.contains("<sound tempo=\"130\"/>"))
+        assertTrue("expected tempo 130", Regex("<sound tempo=\"([^\"]+)\"").findAll(xml).any { kotlin.math.abs(it.groupValues[1].toDouble() - 130.0) < 0.01 })
 
         val measures = Regex("<measure number=").findAll(xml).count()
         assertEquals(116, measures)

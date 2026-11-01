@@ -1,810 +1,291 @@
 package com.pianoscorefollower.app.ui
 
+import androidx.activity.compose.BackHandler
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
 import android.Manifest
+import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pianoscorefollower.app.MainViewModel
-import com.pianoscorefollower.app.R
-import com.pianoscorefollower.app.ScoreUiState
-import com.pianoscorefollower.app.audio.AudioViewModel
-import com.pianoscorefollower.app.follower.PageTurnController
-import com.pianoscorefollower.app.follower.PageTurnReason
-import com.pianoscorefollower.app.score.BuiltInSamples
+import com.pianoscorefollower.app.audio.*
+import com.pianoscorefollower.app.performance.FollowStatus
 import com.pianoscorefollower.app.score.SampleScore
-import com.pianoscorefollower.app.viewer.ScoreViewerController
-import com.pianoscorefollower.app.viewer.ScoreViewerWebView
-import kotlinx.coroutines.flow.distinctUntilChanged
+import com.pianoscorefollower.app.viewer.*
 import java.util.concurrent.atomic.AtomicReference
 
-/** Below this width the workspace switches to the stacked, phone-friendly chrome. */
-private const val COMPACT_WIDTH_DP = 600
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScoreWorkspaceScreen(onExit: () -> Unit, onImport: () -> Unit, onLoadSample: (SampleScore) -> Unit, onOpenSettings: () -> Unit,
+    onSwitchToScroll: (() -> Unit)?, viewModel: MainViewModel = viewModel(), audioViewModel: AudioViewModel = viewModel()) {
+    val preferences=LocalContext.current.getSharedPreferences("performance",0)
+    var dark by rememberSaveable { mutableStateOf(preferences.getBoolean("darkPerformance",true)) }
+    val scheme=if(dark) darkColorScheme(background=androidx.compose.ui.graphics.Color(0xff14171d),surface=androidx.compose.ui.graphics.Color(0xff22262f),onSurface=androidx.compose.ui.graphics.Color(0xfff2f4f8),onPrimary=androidx.compose.ui.graphics.Color(0xff102a4c),secondaryContainer=androidx.compose.ui.graphics.Color(0xff30445f),onSecondaryContainer=androidx.compose.ui.graphics.Color(0xffe4efff),surfaceVariant=androidx.compose.ui.graphics.Color(0xff303744),onSurfaceVariant=androidx.compose.ui.graphics.Color(0xffc3ccd9),primary=androidx.compose.ui.graphics.Color(0xffa8c7fa)) else lightColorScheme()
+    MaterialTheme(colorScheme=scheme) {
+        CompositionLocalProvider(LocalContentColor provides scheme.onSurface) {
+            ScoreWorkspaceContent(onExit,onImport,onLoadSample,onOpenSettings,dark,{dark=it;preferences.edit().putBoolean("darkPerformance",it).apply()},onSwitchToScroll,viewModel,audioViewModel)
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScoreWorkspaceScreen(
-    onImport: () -> Unit,
-    onLoadSample: (SampleScore) -> Unit,
-    onOpenSettings: () -> Unit,
-    onSwitchToScroll: (() -> Unit)?,
-    viewModel: MainViewModel = viewModel(),
-    audioViewModel: AudioViewModel = viewModel(),
-) {
+private fun ScoreWorkspaceContent(onExit: () -> Unit, onImport: () -> Unit, onLoadSample: (SampleScore) -> Unit, onOpenSettings: () -> Unit,
+    dark:Boolean, onDarkChange:(Boolean)->Unit, onSwitchToScroll: (() -> Unit)?, viewModel: MainViewModel = viewModel(), audioViewModel: AudioViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val listeningState by audioViewModel.listeningState.collectAsStateWithLifecycle()
-    val followState by audioViewModel.followState.collectAsStateWithLifecycle()
-    val isCompact = LocalConfiguration.current.screenWidthDp < COMPACT_WIDTH_DP
+    val follow by audioViewModel.followState.collectAsStateWithLifecycle()
+    val listening by audioViewModel.listeningState.collectAsStateWithLifecycle()
+    val source by audioViewModel.source.collectAsStateWithLifecycle()
+    val reference by audioViewModel.referenceState.collectAsStateWithLifecycle()
+    val midi by audioViewModel.midi.state.collectAsStateWithLifecycle()
+    val assessment by audioViewModel.assessment.collectAsStateWithLifecycle()
+    val assessmentMode by audioViewModel.assessmentMode.collectAsStateWithLifecycle()
+    val assessmentOptions by audioViewModel.assessmentOptions.collectAsStateWithLifecycle()
+    val prefs=LocalContext.current.getSharedPreferences("performance",0)
+    var notation by rememberSaveable { mutableStateOf(prefs.getString("notation","staff") ?: "staff") }
     val controller = remember { ScoreViewerController() }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scoreBytes = remember { AtomicReference<ByteArray?>(null) }
-    val pageTurner = remember { PageTurnController() }
-    val transportOwner = remember { Any() }
-
-    val startCapture: () -> Unit = {
-        if (state.canFollow) {
-            audioViewModel.startFollowing(state.timeline, state.tempoBpm)
-        } else {
-            audioViewModel.startListening()
-        }
+    val bytes = remember { AtomicReference<ByteArray?>(null) }
+    val followingGeneration=remember { AtomicReference<Int?>(null) }
+    var diagnostics by rememberSaveable { mutableStateOf(false) }
+    var pendingPlay by remember { mutableStateOf(false) }
+    var staffs by remember(state.loadGeneration) { mutableStateOf(listOf(0,1)) }
+    var tracks by remember(state.loadGeneration) { mutableStateOf(emptyList<Int>()) }
+    val snackbar = remember { SnackbarHostState() }
+    val chrome = LocalPerformanceChrome.current
+    val context = LocalContext.current
+    val wide=LocalConfiguration.current.screenWidthDp>=600
+    val diagnosticsHeight=LocalConfiguration.current.screenHeightDp.dp*.85f
+    BackHandler { if(diagnostics) diagnostics=false else if(chrome.focused) chrome.focused=false else onExit() }
+    DisposableEffect(context) {
+        val window=(context as? android.app.Activity)?.window
+        val bars=window?.let { WindowCompat.getInsetsController(it,it.decorView) }
+        bars?.systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        bars?.hide(WindowInsetsCompat.Type.systemBars())
+        onDispose { bars?.show(WindowInsetsCompat.Type.systemBars()) }
     }
-    val currentStartCapture by rememberUpdatedState(startCapture)
-
-    val micPermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) currentStartCapture() else audioViewModel.onPermissionDenied()
-    }
-
-    val toggleListening: () -> Unit = {
-        when {
-            listeningState.isRunning -> audioViewModel.stopListening()
-            audioViewModel.hasRecordPermission() -> startCapture()
-            else -> micPermission.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-
-    /*
-     * A tap on play while the soundfont is still decoding is remembered rather than
-     * dropped, so the request survives the wait instead of leaving the player stuck
-     * on a hint with nothing happening.
-     */
-    var playRequested by remember { mutableStateOf(false) }
-
-    // Playback starts from wherever the cursor currently sits, so a tap on the score
-    // first, then play, is all it takes to rehearse from that point.
-    val togglePlayback: () -> Unit = {
-        when {
-            state.isPlaying -> {
-                playRequested = false
-                controller.pause()
-            }
-            state.isPlayerReady -> controller.play()
-            state.playerError != null -> controller.showHint(state.playerError!!)
-            else -> {
-                playRequested = true
-                controller.showHint("音源正在加载，完成后自动开始播放…")
-            }
-        }
-    }
-
-    // The queued request fires the moment the soundfont finishes decoding.
-    LaunchedEffect(state.isPlayerReady, playRequested) {
-        if (playRequested && state.isPlayerReady) {
-            playRequested = false
-            controller.play()
-        }
-    }
-
-    val retrySoundFont: () -> Unit = {
-        playRequested = false
-        viewModel.onSoundFontRetry()
-        controller.retrySoundFont()
-    }
-
-    val stopPlayback: () -> Unit = { controller.stopPlayback() }
-
-    val restart: () -> Unit = {
-        if (followState.isFollowing) audioViewModel.seekToStart()
-        controller.seekTo(0)
-    }
-
-    val goToPage: (Int) -> Unit = { raw ->
-        val target = raw.coerceIn(0, maxOf(0, state.pageCount - 1))
-        pageTurner.onManualPage(target)
-        controller.scrollToPage(target)
-        viewModel.onPageChangedByUser(target)
-    }
-
-    /*
-     * The transport belongs to the shared bottom bar, on the same row as the tab
-     * pills, rather than to a bar of this screen's own stacked above them.
-     */
-    val bottomBarHost = LocalBottomBarHost.current
-    SideEffect {
-        bottomBarHost.setTransport(
-            transportOwner,
-            if (state.loadedScore == null) {
-                null
-            } else {
-                {
-                    FollowTransport(
-                        state = state,
-                        onToggleAutoPageTurn = { viewModel.setAutoPageTurn(!state.autoPageTurn) },
-                        onRestart = restart,
-                        onTogglePlay = togglePlayback,
-                        onStop = stopPlayback,
-                        onPrevious = { goToPage(state.currentPage - 1) },
-                        onNext = { goToPage(state.currentPage + 1) },
-                        onRetrySoundFont = retrySoundFont,
-                    )
-                }
-            }
-        )
-    }
-    DisposableEffect(Unit) {
-        onDispose { bottomBarHost.clearTransport(transportOwner) }
-    }
-
-    LaunchedEffect(state.errorMessage) {
-        val message = state.errorMessage ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message)
-        viewModel.dismissError()
-    }
-
-    LaunchedEffect(listeningState.errorMessage) {
-        val message = listeningState.errorMessage ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message)
-        audioViewModel.clearError()
-    }
-
-    /*
-     * The failure is announced once but stays in the state: the transport renders a
-     * retry next to it, and dismissing it here would drop the player back into the
-     * loading look with no way out.
-     */
-    LaunchedEffect(state.playerError) {
-        val message = state.playerError ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message)
-    }
-
-    // Leaving the app must not keep the microphone open.
     val lifecycleOwner = LocalLifecycleOwner.current
+    val start by rememberUpdatedState(newValue = {
+        pendingPlay = false; controller.pause()
+        audioViewModel.startFollowing(state.timeline, state.tempoBpm, state.seekTick, state.autoLocate)
+    })
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) start() else audioViewModel.onPermissionDenied()
+    }
+    val toggleFollow: () -> Unit = {
+        if (follow.isFollowing) { viewModel.rememberPosition(follow.cursorTick); audioViewModel.stopListening() }
+        else if (source == InputSource.MIDI || audioViewModel.hasRecordPermission()) start()
+        else permission.launch(Manifest.permission.RECORD_AUDIO)
+    }
+    fun resetToStart(){
+        audioViewModel.stopListening();audioViewModel.resetAssessment();audioViewModel.seekToStart()
+        viewModel.setAutoLocate(false);controller.seekTo(0);viewModel.rememberPosition(0)
+    }
+    fun prepareSelectionChange() {
+        val tick=if(follow.isFollowing) follow.cursorTick else if(state.isPlaying) state.playbackTick else state.seekTick
+        viewModel.rememberPosition(tick);audioViewModel.stopListening();controller.pause();pendingPlay=false
+    }
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                audioViewModel.stopListening()
-                controller.pause()
-            }
-        }
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) {
+            if (audioViewModel.followState.value.isFollowing) viewModel.rememberPosition(audioViewModel.followState.value.cursorTick)
+            audioViewModel.stopListening(); controller.pause(); pendingPlay = false
+        } }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            audioViewModel.stopListening()
-        }
+        val window = (context as? android.app.Activity)?.window
+        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer); if (audioViewModel.followState.value.isFollowing) viewModel.rememberPosition(audioViewModel.followState.value.cursorTick); audioViewModel.stopListening(); controller.pause()
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); viewModel.onViewerDetached() }
     }
-
-    // Switching tabs tears the WebView down. The next visit builds a fresh one,
-    // which will not re-announce itself through a state change, so the attachment
-    // flag has to be cleared for the load to be triggered again.
-    DisposableEffect(Unit) {
-        onDispose { viewModel.onViewerDetached() }
+    LaunchedEffect(state.loadedScore, state.loadGeneration, state.isViewerAttached) {
+        state.loadedScore?.let { score -> bytes.set(score.bytes); if (state.isViewerAttached) controller.loadCurrentScore(state.loadGeneration) }
     }
-
-    // Hand the freshly imported bytes to the viewer page, then ask it to render.
-    LaunchedEffect(state.isViewerAttached, state.loadGeneration) {
-        val score = state.loadedScore
-        if (state.isViewerAttached && score != null) {
-            scoreBytes.set(score.bytes)
-            controller.loadCurrentScore()
-        }
+    LaunchedEffect(notation,state.isScoreRendered) { controller.setNotationMode(notation) }
+    LaunchedEffect(assessmentOptions.speed,state.isScoreRendered) { controller.setPracticeSpeed(assessmentOptions.speed) }
+    LaunchedEffect(state.timeline, state.loadGeneration) {
+        audioViewModel.bindAssessmentScore(state.timeline)
+        audioViewModel.stopListening(); audioViewModel.seekTo(state.seekTick)
     }
-
-    LaunchedEffect(state.loadGeneration) {
-        pageTurner.reset()
+    LaunchedEffect(state.timeline,state.loadGeneration,source) {
+        if(!state.timeline.isEmpty && source==InputSource.MICROPHONE)audioViewModel.prepareFollowing()
     }
-
-    // The follower advances the cursor far faster than the UI needs to repaint, so
-    // each tick is forwarded straight to the overlay instead of through composition.
-    LaunchedEffect(Unit) {
-        snapshotFlow { followState.isFollowing to followState.cursorTick }
-            .distinctUntilChanged()
-            .collect { (following, tick) ->
-                if (following) controller.setCursorTick(tick) else controller.hideCursor()
+    LaunchedEffect(state.isScoreRendered, state.seekTick) {
+        if (state.isScoreRendered) { controller.placeCursor(state.seekTick); audioViewModel.seekTo(state.seekTick) }
+    }
+    LaunchedEffect(follow.cursorTick, follow.position.eventIndex, follow.isFollowing, follow.confidence, state.navigationMode, state.autoPageTurn, state.userBrowsing) {
+        val allowed = follow.isFollowing && com.pianoscorefollower.app.follower.PageNavigationPolicy.canFollow(follow.position, state.autoPageTurn, state.userBrowsing)
+        val anchor=state.timeline.events.getOrNull(follow.position.eventIndex)
+        controller.followPosition(follow.cursorTick,if(follow.isFollowing) anchor?.tick else null,
+            anchor?.measure ?: follow.measure,state.navigationMode,allowed)
+    }
+    LaunchedEffect(follow.isFollowing) {
+        if (follow.isFollowing) {
+            followingGeneration.set(state.loadGeneration)
+            while (true) {
+                kotlinx.coroutines.delay(5000)
+                viewModel.rememberPosition(audioViewModel.followState.value.cursorTick, updateAnchor = false)
             }
-    }
-
-    LaunchedEffect(
-        followState.cursorTick,
-        followState.confidence,
-        followState.isFollowing,
-        state.cursorPage,
-        state.isLastMeasureOfPage,
-        state.pageCount,
-        state.autoPageTurn,
-        state.loadGeneration,
-    ) {
-        if (!state.autoPageTurn || !followState.isFollowing) return@LaunchedEffect
-
-        val decision = pageTurner.onCursor(
-            cursorPage = state.cursorPage,
-            cursorMeasure = followState.measure,
-            pageCount = state.pageCount,
-            isLastMeasureOfPage = state.isLastMeasureOfPage,
-            measureProgress = state.timeline.progressInMeasure(
-                followState.measure,
-                followState.cursorTick,
-            ),
-            confidence = followState.confidence,
-        )
-
-        if (decision.reason != PageTurnReason.NONE) {
-            controller.scrollToPage(decision.targetPage)
-            viewModel.onPageChangedByUser(decision.targetPage)
+        } else {
+            val generation=followingGeneration.getAndSet(null)
+            if(generation!=null && generation==viewModel.uiState.value.loadGeneration)
+                viewModel.rememberPosition(audioViewModel.followState.value.cursorTick)
         }
     }
+    LaunchedEffect(state.isPlaying, state.autoPageTurn) { if (state.isPlaying) controller.navigation(state.navigationMode, state.autoPageTurn && !state.userBrowsing) }
+    LaunchedEffect(pendingPlay, state.isPlayerReady) { if (pendingPlay && state.isPlayerReady) { pendingPlay = false; controller.play() } }
+    LaunchedEffect(listening.errorMessage) { listening.errorMessage?.let { snackbar.showSnackbar(it); audioViewModel.clearError() } }
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            ScoreViewerWebView(controller, { bytes.get() }, { event ->
+                viewModel.onViewerEvent(event)
+                if (event is ViewerEvent.ScoreStructure) tracks = event.selectedTracks
+                if (event is ViewerEvent.SeekRequested) {
+                    viewModel.setAutoLocate(false);viewModel.rememberPosition(event.tick)
+                    if(assessmentMode && assessment.started && !assessment.finished) { audioViewModel.stopListening();audioViewModel.resetAssessment() }
+                    audioViewModel.seekTo(event.tick)
+                }
+            }, Modifier.fillMaxSize())
+            if (state.loadedScore == null) Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Piano, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                Text("打开琴谱，开始练习", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(16.dp)); Button(onClick = onImport) { Text("选择 MIDI / MusicXML") }
+                com.pianoscorefollower.app.score.BuiltInSamples.filterNot { it.assetPath.contains("the_truth") }.take(2).forEach { sample -> TextButton(onClick = { onLoadSample(sample) }) { Text(sample.title) } }
+            }
+            if (state.isLoading) CircularProgressIndicator(Modifier.align(Alignment.Center))
+            if (state.userBrowsing) FilledTonalButton(onClick = { viewModel.resumeFollow(); controller.resumeFollow() }, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom=if(chrome.focused)12.dp else 80.dp)) { Text("回到跟随位置") }
 
-    // During playback the cursor is driven by the player, so the page holding it is
-    // simply scrolled into view once it moves on to the next one.
-    LaunchedEffect(
-        state.isPlaying,
-        state.cursorPage,
-        state.currentPage,
-        state.autoPageTurn,
-        state.pageCount,
-    ) {
-        if (!state.isPlaying || !state.autoPageTurn) return@LaunchedEffect
-        val target = state.cursorPage
-        if (target !in 0 until state.pageCount || target == state.currentPage) return@LaunchedEffect
-        controller.scrollToPage(target)
-        viewModel.onPageChangedByUser(target)
-    }
-
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        // Insets are already consumed by the root column that hosts the tab bar.
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            WorkspaceTopBar(
-                title = state.scoreTitle.ifBlank { stringResource(R.string.app_name) },
-                subtitle = buildSubtitle(state),
-                hasScore = state.loadedScore != null,
-                isLoading = state.isLoading,
-                isListening = listeningState.isRunning,
-                isCompact = isCompact,
-                onToggleMic = toggleListening,
-                onImport = onImport,
-                onLoadSample = onLoadSample,
-                onClearScore = { viewModel.clearLoadedScore() },
-                onSwitchToScroll = onSwitchToScroll,
-                onOpenSettings = onOpenSettings,
-            )
-        },
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            ScoreViewerWebView(
-                controller = controller,
-                scoreBytesProvider = { scoreBytes.get() },
-                onEvent = viewModel::onViewerEvent,
-                modifier = Modifier.fillMaxSize(),
-            )
-
-            if (state.loadedScore == null) {
-                EmptyState(
-                    isLoading = state.isLoading,
-                    onImport = onImport,
-                    onLoadSample = onLoadSample,
-                )
-            } else {
-                MicrophonePanel(
-                    listening = listeningState,
-                    follow = followState,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                // Decoding the sampled piano takes a moment; without a word from the
-                // app the score just sits there and reads as a frozen screen.
-                if (state.isPlayerLoading) {
-                    SoundFontLoadingChip(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 12.dp),
-                    )
+            if(!chrome.focused) Surface(
+                modifier=Modifier.align(Alignment.BottomCenter).padding(horizontal=12.dp,vertical=12.dp).widthIn(max=720.dp),
+                shape=RoundedCornerShape(32.dp), tonalElevation=6.dp, shadowElevation=4.dp,
+                color=MaterialTheme.colorScheme.surface.copy(alpha=.96f)) {
+                Row(Modifier.padding(horizontal=4.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+                    IconButton(onClick=onExit) {Icon(Icons.AutoMirrored.Filled.ArrowBack,"返回曲库")}
+                    if(wide) {
+                        Column(Modifier.widthIn(max=180.dp).padding(end=8.dp)) {
+                            Text(state.scoreTitle.ifBlank { "演奏" },maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelMedium)
+                            Text("第 ${(if(follow.isFollowing)follow.measure else state.currentMeasure)+1} 小节 · ${if(source==InputSource.MIDI) "MIDI" else "听音"}",style=MaterialTheme.typography.labelSmall)
+                        }
+                        IconButton(onClick={viewModel.onPageChangedByUser(state.currentPage-1);controller.scrollToPage((state.currentPage-1).coerceAtLeast(0))},enabled=state.currentPage>0) {Icon(Icons.Default.ChevronLeft,"上一页")}
+                    }
+                    if(wide && !follow.isFollowing) IconButton(onClick=::resetToStart) {Icon(Icons.Default.Replay,"回到开头")}
+                    FilledTonalButton(onClick={if(source==InputSource.MICROPHONE&&reference.error!=null)audioViewModel.prepareFollowing() else toggleFollow()},enabled=state.canFollow && !state.isLoading && (source==InputSource.MIDI||reference.ready||reference.error!=null),contentPadding=PaddingValues(horizontal=16.dp)) {
+                        Icon(if(follow.isFollowing) Icons.Default.Pause else Icons.Default.PlayArrow,null,Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(if(source==InputSource.MICROPHONE&&reference.preparing) "准备跟谱…" else if(source==InputSource.MICROPHONE&&reference.error!=null) "重试跟谱准备" else if(follow.isFollowing) "暂停" else if(assessmentMode) "开始评分" else "开始跟谱")
+                    }
+                    if(wide) IconButton(onClick={controller.scrollToPage((state.currentPage+1).coerceAtMost(state.pageCount-1));viewModel.onPageChangedByUser(state.currentPage+1)},enabled=state.currentPage<state.pageCount-1) {Icon(Icons.Default.ChevronRight,"下一页")}
+                    IconButton(onClick={diagnostics=true}) {Icon(Icons.Default.Tune,"演奏设置")}
+                    IconButton(onClick={chrome.focused=true}) {Icon(Icons.Default.Fullscreen,"隐藏工具栏")}
                 }
             }
+            else Surface(Modifier.align(Alignment.TopEnd).padding(12.dp),shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surface.copy(alpha=.8f)) {
+                IconButton(onClick={chrome.focused=false}) {Icon(Icons.Default.FullscreenExit,"显示工具栏")}
+            }
+            if(!chrome.focused && follow.isFollowing && follow.position.status!=FollowStatus.FOLLOWING) Surface(Modifier.align(Alignment.TopCenter).padding(top=8.dp),shape=RoundedCornerShape(16.dp),tonalElevation=2.dp) {
+                Text(if(source==InputSource.MICROPHONE&&listening.silentInput) "未收到麦克风声音，请检查输入设备或模拟器麦克风" else when(follow.position.status){FollowStatus.LOCATING->"定位中，请继续演奏";FollowStatus.LOST->"暂时失配，可点按谱面重新定位";else->"等待演奏"},Modifier.padding(horizontal=12.dp,vertical=6.dp),style=MaterialTheme.typography.labelSmall)
+            }
+            if(assessmentMode && assessment.started && !chrome.focused) SuggestionChip(
+                onClick={diagnostics=true},label={Text(assessment.score?.let { "%.1f 分 · 查看评分".format(it) } ?: "${assessment.correct}/${assessment.total} 音 · 查看评分")},
+                modifier=Modifier.align(Alignment.TopEnd).padding(12.dp))
+            SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter).padding(bottom=76.dp))
         }
-    }
-}
-
-private fun buildSubtitle(state: ScoreUiState): String {
-    val score = state.loadedScore ?: return "导入 MIDI 或 MusicXML 乐谱开始"
-    val parts = mutableListOf(score.sourceFormat.displayName)
-    if (state.trackNames.isNotEmpty()) parts += state.trackNames.joinToString(" / ")
-    if (state.measureCount > 0) parts += "${state.measureCount} 小节"
-    if (state.pageCount > 0) parts += "${state.pageCount} 页"
-    return parts.joinToString("  ·  ")
-}
-
-/**
- * Current position. On a phone the units are dropped so the bar can hold a 48dp touch
- * target on every button without the readout pushing the row past the screen edge.
- */
-private fun buildPositionLabel(state: ScoreUiState, compact: Boolean): String {
-    val measure = when {
-        state.measureCount <= 0 -> "—"
-        compact -> "${state.currentMeasure + 1}/${state.measureCount}"
-        else -> "第 ${state.currentMeasure + 1}/${state.measureCount} 小节"
-    }
-    val page = when {
-        state.pageCount <= 0 -> null
-        compact -> "${state.currentPage + 1}/${state.pageCount}"
-        else -> "第 ${state.currentPage + 1}/${state.pageCount} 页"
-    }
-    return if (page != null) "$measure · $page" else measure
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun WorkspaceTopBar(
-    title: String,
-    subtitle: String,
-    hasScore: Boolean,
-    isLoading: Boolean,
-    isListening: Boolean,
-    isCompact: Boolean,
-    onToggleMic: () -> Unit,
-    onImport: () -> Unit,
-    onLoadSample: (SampleScore) -> Unit,
-    onClearScore: () -> Unit,
-    onSwitchToScroll: (() -> Unit)?,
-    onOpenSettings: () -> Unit,
-) {
-    var samplesOpen by remember { mutableStateOf(false) }
-    var overflowOpen by remember { mutableStateOf(false) }
-
-    TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-        windowInsets = WindowInsets(0, 0, 0, 0),
-        title = {
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
-        actions = {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(end = 8.dp)
-                        .size(20.dp),
-                    strokeWidth = 2.dp,
-                )
-            }
-
-            IconButton(onClick = onToggleMic) {
-                Icon(
-                    imageVector = if (isListening) Icons.Filled.Mic else Icons.Filled.MicOff,
-                    contentDescription = if (isListening) "停止聆听" else "开始聆听",
-                    tint = if (isListening) Accent else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Box {
-                if (isCompact) {
-                    IconButton(onClick = { samplesOpen = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.LibraryMusic,
-                            contentDescription = "示例乐谱",
-                        )
-                    }
-                } else {
-                    OutlinedButton(
-                        onClick = { samplesOpen = true },
-                        modifier = Modifier.padding(end = 8.dp),
-                    ) {
-                        Text("示例乐谱")
-                        Spacer(Modifier.width(6.dp))
-                        Icon(
-                            imageVector = Icons.Filled.ExpandMore,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
+        if (diagnostics) ModalBottomSheet(onDismissRequest={diagnostics=false},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true), modifier=Modifier.widthIn(max=680.dp)) {
+            Column(Modifier.padding(horizontal = 16.dp).heightIn(max=diagnosticsHeight).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(state.scoreTitle.ifBlank { "演奏设置" },style=MaterialTheme.typography.titleLarge,maxLines=1,overflow=TextOverflow.Ellipsis)
+                Text("第 ${(if(follow.isFollowing) follow.measure else state.currentMeasure)+1} 小节 · ${state.currentPage+1}/${state.pageCount.coerceAtLeast(1)} 页",style=MaterialTheme.typography.bodySmall)
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { Text("深色演奏模式",Modifier.weight(1f));Switch(dark,onDarkChange) }
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf("staff" to "五线谱","numbered" to "简谱").forEachIndexed { i,(id,label) ->
+                        SegmentedButton(notation==id,{notation=id;prefs.edit().putString("notation",id).apply()},SegmentedButtonDefaults.itemShape(i,2)) { Text(label) }
                     }
                 }
-                DropdownMenu(
-                    expanded = samplesOpen,
-                    onDismissRequest = { samplesOpen = false },
-                ) {
-                    BuiltInSamples.forEach { sample ->
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(sample.title)
-                                    Text(
-                                        text = sample.subtitle,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            },
-                            onClick = {
-                                samplesOpen = false
-                                onLoadSample(sample)
-                            },
-                        )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf(false to "自由练习",true to "评分练习").forEachIndexed { i,(value,label) ->
+                        SegmentedButton(assessmentMode==value,{audioViewModel.setAssessmentMode(value)},SegmentedButtonDefaults.itemShape(i,2)) { Text(label) }
                     }
                 }
-            }
-
-            if (isCompact) {
-                IconButton(
-                    onClick = onImport,
-                    modifier = Modifier.padding(end = 4.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.FileOpen,
-                        contentDescription = if (hasScore) "更换乐谱" else "导入乐谱",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                if(assessmentMode && assessment.started) AssessmentSummary(assessment,
+                    audioViewModel::finishAssessment,
+                    {resetToStart()},
+                    {tick->diagnostics=false;audioViewModel.stopListening();controller.placeCursor(tick);audioViewModel.seekTo(tick);viewModel.rememberPosition(tick)})
+                HorizontalDivider()
+                Row(verticalAlignment=Alignment.CenterVertically) {
+                    IconButton(onClick={viewModel.onPageChangedByUser(state.currentPage-1);controller.scrollToPage((state.currentPage-1).coerceAtLeast(0))},enabled=state.currentPage>0){Icon(Icons.Default.ChevronLeft,"上一页")}
+                    Text("${state.currentPage+1}/${state.pageCount.coerceAtLeast(1)} 页",style=MaterialTheme.typography.bodySmall)
+                    IconButton(onClick={controller.scrollToPage((state.currentPage+1).coerceAtMost(state.pageCount-1));viewModel.onPageChangedByUser(state.currentPage+1)},enabled=state.currentPage<state.pageCount-1){Icon(Icons.Default.ChevronRight,"下一页")}
                 }
-            } else {
-                Button(
-                    onClick = onImport,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                    modifier = Modifier.padding(end = 4.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.FileOpen,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (hasScore) "更换乐谱" else "导入乐谱")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(source == InputSource.MICROPHONE, { audioViewModel.setSource(InputSource.MICROPHONE) }, { Text("麦克风") })
+                    FilterChip(source == InputSource.MIDI, { audioViewModel.setSource(InputSource.MIDI) }, { Text("USB MIDI") })
                 }
-            }
-
-            if (hasScore) {
-                Box {
-                    IconButton(
-                        onClick = { overflowOpen = true },
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "更多操作",
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = overflowOpen,
-                        onDismissRequest = { overflowOpen = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("清除当前乐谱") },
-                            onClick = {
-                                overflowOpen = false
-                                onClearScore()
-                            },
-                        )
+                if (source == InputSource.MIDI) {
+                    Text(midi.connected?.name ?: "等待 USB MIDI 设备", style = MaterialTheme.typography.bodySmall)
+                    midi.endpoints.forEach { e -> TextButton(onClick = { audioViewModel.stopListening(); audioViewModel.midi.select(e) }) { Text(e.name) } }
+                } else Text("输入电平 ${listening.levelDb.toInt()} dB · ${listening.sampleRate} Hz", style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if(assessmentMode) "评分从选定位置开始" else "自动定位起弹位置", Modifier.weight(1f)); Switch(state.autoLocate && !assessmentMode, viewModel::setAutoLocate, Modifier.semantics { contentDescription="自动定位起弹位置" }, enabled=!assessmentMode)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    FilterChip(state.navigationMode == "line", { viewModel.setNavigationMode("line") }, { Text("逐行跟随") })
+                    FilterChip(state.navigationMode == "page", { viewModel.setNavigationMode("page") }, { Text("分页跟随") })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("自动移动谱面",Modifier.weight(1f))
+                    Switch(state.autoPageTurn, viewModel::setAutoPageTurn, Modifier.semantics { contentDescription="自动移动谱面" })
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0 to "高音谱表",1 to "低音谱表").forEach { (i,label) ->
+                        FilterChip(i in staffs, { val selected=if(i in staffs) staffs-i else staffs+i
+                            if(selected.isNotEmpty()) { prepareSelectionChange(); staffs=selected; controller.setStaffs(selected) }
+                        }, { Text(label) })
                     }
                 }
-            }
-
-            if (onSwitchToScroll != null) {
-                IconButton(onClick = onSwitchToScroll) {
-                    Icon(
-                        imageVector = Icons.Filled.PhotoLibrary,
-                        contentDescription = "切换到滚动谱",
-                    )
+                if (state.trackNames.size > 1) LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    itemsIndexed(state.trackNames) { i, name -> FilterChip(i in tracks, {
+                        val selected = if (i in tracks) tracks - i else tracks + i
+                        if (selected.isNotEmpty()) { prepareSelectionChange(); tracks = selected; controller.setTracks(selected) }
+                    }, { Text(name) }) }
                 }
-            }
-
-            IconButton(
-                onClick = onOpenSettings,
-                modifier = Modifier.padding(end = 4.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "设置",
-                )
-            }
-        },
-    )
-}
-
-/**
- * Transport for the score follower, drawn inside the shared bottom bar.
- *
- * Position, the auto-page-turn switch and all five playback buttons share one
- * line. This used to be two rows of its own sitting above the tab strip, which
- * together cost a band of staves at the bottom of every page.
- */
-@Composable
-private fun FollowTransport(
-    state: ScoreUiState,
-    onToggleAutoPageTurn: () -> Unit,
-    onRestart: () -> Unit,
-    onTogglePlay: () -> Unit,
-    onStop: () -> Unit,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    onRetrySoundFont: () -> Unit,
-) {
-    // Play/pause, a spinner while the samples decode, or a retry once that failed.
-    val primaryState = when {
-        state.playerError != null -> PrimaryActionState.Failed
-        state.isPlaying -> PrimaryActionState.Pause
-        state.isPlayerLoading -> PrimaryActionState.Loading
-        else -> PrimaryActionState.Play
-    }
-
-    /*
-     * Every control keeps its 48dp touch target, so on a phone the two set-and-forget
-     * actions move to the top bar's overflow menu and the bar keeps only the position
-     * readout and the four playback actions.
-     */
-    val compact = LocalConfiguration.current.screenWidthDp < COMPACT_WIDTH_DP
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = buildPositionLabel(state, compact),
-            style = MaterialTheme.typography.labelSmall,
-            fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.width(4.dp))
-
-        if (!compact) {
-            AutoPageToggle(
-                on = state.autoPageTurn,
-                enabled = state.canFollow,
-                onToggle = onToggleAutoPageTurn,
-            )
-            TransportIconButton(
-                icon = Icons.Filled.RestartAlt,
-                contentDescription = "回到开头",
-                onClick = onRestart,
-                enabled = state.canPlay,
-            )
-        }
-
-        TransportIconButton(
-            icon = Icons.Filled.ChevronLeft,
-            contentDescription = "上一页",
-            onClick = onPrevious,
-            enabled = state.currentPage > 0,
-        )
-        RoundPrimaryButton(
-            state = primaryState,
-            onClick = if (primaryState == PrimaryActionState.Failed) {
-                onRetrySoundFont
-            } else {
-                onTogglePlay
-            },
-            enabled = state.canPlay,
-        )
-        TransportIconButton(
-            icon = Icons.Filled.ChevronRight,
-            contentDescription = "下一页",
-            onClick = onNext,
-            enabled = state.currentPage < state.pageCount - 1,
-        )
-        TransportIconButton(
-            icon = Icons.Filled.Stop,
-            contentDescription = "停止",
-            onClick = onStop,
-            enabled = state.isPlaying,
-        )
-    }
-}
-
-/**
- * A quiet "still working" note shown while the sampled piano is being decoded, so a
- * slow load is visibly progress rather than an apparently frozen score.
- */
-@Composable
-private fun SoundFontLoadingChip(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
-        tonalElevation = 3.dp,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(16.dp),
-                strokeWidth = 2.dp,
-            )
-            Text(
-                text = "音源加载中…",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyState(
-    isLoading: Boolean,
-    onImport: () -> Unit,
-    onLoadSample: (SampleScore) -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.94f))
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 460.dp)
-                .heightIn(max = 560.dp)
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
-                .verticalScroll(rememberScrollState())
-                .padding(28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.LibraryMusic,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(44.dp),
-            )
-            Text(
-                text = "导入你的乐谱",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "支持 MIDI（.mid / .midi）与 MusicXML（.musicxml / .xml / .mxl）。\n导入后自动排版为完整五线谱。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(4.dp))
-            Button(
-                onClick = onImport,
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text("选择乐谱文件")
+                if(assessmentMode) AssessmentSettings(assessmentOptions,!follow.isFollowing,audioViewModel::setAssessmentOptions)
+                Text("音高候选：${follow.midiNotes.joinToString(" ") { midiNoteName(it) }.ifBlank { "—" }}\n目标：${follow.targetMidiNotes.joinToString(" ") { midiNoteName(it) }.ifBlank { "—" }}", style = MaterialTheme.typography.labelSmall)
+                Text("匹配 ${(follow.bestSimilarity * 100).toInt()}% · 置信度 ${(follow.confidence * 100).toInt()}% · 第 ${follow.position.occurrence+1} 遍", style = MaterialTheme.typography.labelSmall)
+                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick=::resetToStart) {Text("回到开头")}
+                    OutlinedButton(onClick={if(state.isPlaying || pendingPlay){controller.pause();pendingPlay=false}else{audioViewModel.stopListening();pendingPlay=true;controller.ensureSoundFont()}},enabled=state.canPlay) {Text(if(state.isPlaying) "暂停示范" else if(pendingPlay) "加载音源…" else "播放示范")}
                 }
-            }
-
-            Text(
-                text = "或先试试内置示例",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-            BuiltInSamples.forEach { sample ->
-                OutlinedButton(
-                    onClick = { onLoadSample(sample) },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.Start,
-                    ) {
-                        Text(sample.title)
-                        Text(
-                            text = sample.subtitle,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                state.playerError?.let { TextButton(onClick={viewModel.onSoundFontRetry();controller.retrySoundFont();pendingPlay=true}){Text("音源失败，点此重试")} }
+                TextButton(onClick = { pendingPlay = false; controller.stopPlayback() }, enabled = state.isPlaying || pendingPlay) { Text("停止示范") }
+                HorizontalDivider()
+                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick={diagnostics=false;onImport()}) {Text("导入乐谱")}
+                    TextButton(onClick={diagnostics=false;onOpenSettings()}) {Text("应用设置")}
+                    if(onSwitchToScroll!=null) TextButton(onClick={diagnostics=false;onSwitchToScroll()}){Text("图片琴谱")}
                 }
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
-}

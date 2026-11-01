@@ -21,6 +21,12 @@ data class AudioFrame(
      */
     val pitchHz: Float = 0f,
     val pitchConfidence: Float = 0f,
+    val pitches: FloatArray = FloatArray(128),
+    val rearticulation: Boolean = true,
+    val analysisLatencyMs: Long = 185,
+    val sampleTimeMs: Long = 0,
+    val neural:List<NeuralPianoFrame> = emptyList(),
+    val audioTimeMs:Long=0,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

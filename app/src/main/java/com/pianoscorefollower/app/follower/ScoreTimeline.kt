@@ -75,17 +75,32 @@ data class ScoreEvent(
     val chroma: FloatArray,
     val noteCount: Int,
     val isMeasureStart: Boolean,
+    val midiNotes: IntArray = intArrayOf(),
+    val soundingNotes: IntArray = midiNotes,
+    val duration: Int = 960,
+    val notationTick: Long = tick,
+    val occurrence: Int = 0,
+    val tempo: Float = 120f,
+    val voices: List<ScoreVoiceNote> = emptyList(),
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ScoreEvent) return false
-        return tick == other.tick && measure == other.measure && noteCount == other.noteCount
+        return tick == other.tick && measure == other.measure && noteCount == other.noteCount &&
+            chroma.contentEquals(other.chroma) && midiNotes.contentEquals(other.midiNotes) &&
+            soundingNotes.contentEquals(other.soundingNotes) && duration == other.duration &&
+            notationTick == other.notationTick && occurrence == other.occurrence && tempo == other.tempo && voices == other.voices
     }
 
     override fun hashCode(): Int {
         var result = tick.hashCode()
         result = 31 * result + measure
         result = 31 * result + noteCount
+        result = 31 * result + midiNotes.contentHashCode()
+        result = 31 * result + occurrence
         return result
     }
 }
+
+data class ScoreVoiceNote(val pitch: Int, val track: Int, val staff: Int, val voice: Int,
+    val tied: Boolean, val start: Long, val end: Long)

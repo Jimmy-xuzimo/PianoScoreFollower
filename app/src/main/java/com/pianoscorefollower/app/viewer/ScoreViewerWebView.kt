@@ -39,6 +39,11 @@ fun ScoreViewerWebView(
 
     AndroidView(
         modifier = modifier,
+        onRelease = { view ->
+            controller.detach(view)
+            view.removeJavascriptInterface("AndroidHost")
+            view.stopLoading(); view.destroy()
+        },
         factory = { context ->
             val assetLoader = WebViewAssetLoader.Builder()
                 .setDomain(ASSET_DOMAIN)
@@ -67,7 +72,7 @@ fun ScoreViewerWebView(
                 addJavascriptInterface(
                     AndroidHost { raw ->
                         mainHandler.post {
-                            ViewerEvent.parse(raw)?.let { currentOnEvent(it) }
+                            controller.parseEvent(raw)?.let { currentOnEvent(it) }
                         }
                     },
                     "AndroidHost",

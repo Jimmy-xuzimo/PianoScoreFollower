@@ -12,6 +12,16 @@ import org.junit.Test
  */
 class CalibrationEngineTest {
 
+    @Test fun savedCalibrationIsVisibleAndUsedAfterRestart() {
+        val engine=CalibrationEngine()
+        assertTrue(engine.restore(25f));engine.start()
+        repeat(10) { engine.onFrame(frame(detuned(e4,25f))) }
+        assertTrue(engine.state.value.hasCalibration)
+        assertEquals(25f,engine.state.value.offsetCents,0.001f)
+        assertEquals(0f,engine.state.value.centsDeviation,0.1f)
+        assertFalse(engine.restore(Float.NaN))
+    }
+
     private val c4 = 261.6256f
     private val e4 = 329.6276f
 
